@@ -30,16 +30,16 @@ export interface IUser extends Document {
   email: string;
   passwordHash: string;
   role: UserRole;
-  name?: string; // Added optional name field
-  stripeCustomerId?: string; // Optional: A user might not be a paying admin initially
-  subscriptionPlan?: SubscriptionPlan; // Optional: Not all users (e.g., students) will have a direct plan
-  trialExpiry?: Date; // Optional: For users on a free trial
-  profilePic?: string; // New field
-  verificationCode?: string; // New field
-  city?: string; // New field
-  address1?: string; // New field
-  address2?: string; // New field
-  country?: string; // New field
+  name: string; // Now required
+  stripeCustomerId: string; // Now required
+  subscriptionPlan: SubscriptionPlan; // Now required
+  trialExpiry: Date; // Now required
+  profilePic?: string; // Reverted to optional
+  verificationCode: string; // Now required
+  city: string; // Now required
+  address1: string; // Now required
+  address2?: string; // address2 can remain optional
+  country: string; // Now required
   createdAt: Date;
   updatedAt: Date;
   // Method to compare passwords (added for convenience)
@@ -59,16 +59,16 @@ const userSchema = new Schema<IUser>(
     },
     passwordHash: { type: String, required: true },
     role: { type: String, enum: Object.values(UserRoles), required: true },
-    name: { type: String }, // Added name to schema
-    stripeCustomerId: { type: String },
-    subscriptionPlan: { type: String, enum: Object.values(SubscriptionPlans) },
-    trialExpiry: { type: Date },
-    profilePic: { type: String }, // New field added to schema
-    verificationCode: { type: String }, // New field added to schema
-    city: { type: String }, // New field added to schema
-    address1: { type: String }, // New field added to schema
-    address2: { type: String }, // New field added to schema
-    country: { type: String }, // New field added to schema
+    name: { type: String, required: true }, // Added name to schema
+    stripeCustomerId: { type: String, required: true },
+    subscriptionPlan: { type: String, enum: Object.values(SubscriptionPlans), required: true },
+    trialExpiry: { type: Date, required: true },
+    profilePic: { type: String }, // Reverted to optional (removed required: true)
+    verificationCode: { type: String, required: true }, // New field added to schema
+    city: { type: String, required: true }, // New field added to schema
+    address1: { type: String, required: true }, // New field added to schema
+    address2: { type: String }, // address2 can remain optional
+    country: { type: String, required: true }, // New field added to schema
   },
   { timestamps: true } // Mongoose will add createdAt and updatedAt
 );

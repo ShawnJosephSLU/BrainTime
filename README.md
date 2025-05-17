@@ -85,6 +85,96 @@ BrainTime.org is an online platform specifically designed for educators, trainer
 *   Use of cloud services for hosting, SSL certificates, domain setup on VPS.
 *   Comprehensive testing (unit, integration, E2E) and security audits.
 
+## API Usage
+
+### User Creation
+
+To create users via the API, send a `POST` request to the appropriate endpoint. The server is expected to be running, typically on `http://localhost:PORT` (where `PORT` is the configured backend port, e.g., 5023).
+
+The request body should be in JSON format.
+
+**1. Create a Student:**
+
+*   **Endpoint:** `POST /api/users/signup/student`
+*   **Request Body:**
+    ```json
+    {
+      "email": "student@example.com",
+      "password": "yoursecurepassword",
+      "name": "Student Name" 
+    }
+    ```
+*   **Description:** This creates a new user with the `student` role.
+
+**2. Create a Creator:**
+
+*   **Endpoint:** `POST /api/users/signup/creator`
+*   **Request Body:**
+    ```json
+    {
+      "email": "creator@example.com",
+      "password": "yoursecurepassword",
+      "name": "Creator Name"
+    }
+    ```
+*   **Description:** This creates a new user with the `creator` role.
+
+**3. Create an Admin:**
+
+*   **Endpoint:** `POST /api/users/signup/admin`
+*   **Request Body:**
+    ```json
+    {
+      "email": "admin@example.com",
+      "password": "yoursecurepassword",
+      "name": "Admin Name"
+    }
+    ```
+*   **Description:** This creates a new user with the `admin` role.
+*   **Security Note:** In a production environment, this endpoint should be strictly protected and accessible only by existing, authenticated administrators.
+
+**Successful Response:**
+
+A successful user creation request will typically return a `201 Created` status code along with a JSON response containing a JWT (JSON Web Token) and the created user's details (excluding the password hash).
+
+```json
+{
+  "token": "your.jwt.token",
+  "user": {
+    "id": "userIdString",
+    "email": "user@example.com",
+    "role": "therole",
+    "name": "User Name",
+    "createdAt": "timestamp",
+    "updatedAt": "timestamp"
+  },
+  "message": "User created successfully as therole."
+}
+```
+
+**Error Responses:**
+
+*   `400 Bad Request`: If required fields (email, password) are missing, or if input validation fails (e.g., invalid email format, password too short).
+*   `409 Conflict`: If a user with the provided email already exists.
+*   `500 Internal Server Error`: For unexpected server-side errors.
+
+### Profile Picture Upload
+
+*   **Endpoint:** `POST /api/users/profile-pic`
+*   **Request Type:** `multipart/form-data`
+*   **Form Fields:**
+    *   `email`: (string) The email of the user whose profile picture is being uploaded.
+    *   `profilePic`: (file) The image file to upload.
+*   **Description:** Uploads a profile picture for the specified user. The image will be stored in AWS S3.
+*   **Authentication:** This endpoint should be protected and require user authentication (e.g., via JWT in an `Authorization` header).
+*   **Successful Response:**
+    ```json
+    {
+      "message": "Profile picture uploaded.",
+      "url": "s3-image-url"
+    }
+    ```
+
 ## Collections
 
 ### Users

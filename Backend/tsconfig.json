@@ -10,6 +10,7 @@
     "resolveJsonModule": true,
     "declaration": true,
     "sourceMap": true,
+    "outDir": "./dist",
     // Strictness flags (many are covered by "strict": true, but listed for clarity)
     "noImplicitAny": true,
     "strictNullChecks": true,
