@@ -1,49 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "target": "es2018",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "declaration": true,
-    "sourceMap": true,
-    "outDir": "./dist",
-    // Strictness flags (many are covered by "strict": true, but listed for clarity)
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "strictBindCallApply": true,
-    "strictPropertyInitialization": true, // Important if you use classes
-    "noImplicitThis": true,
-    "alwaysStrict": true,
-    // Additional useful checks
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    // "outDir": "./dist", // Uncomment and set your output directory (e.g., "./dist")
-    // "rootDir": "./src",  // Uncomment and set your root source files directory (e.g., "./src")
-    "baseUrl": ".", // Base directory for resolving non-absolute module names.
-    "paths": { // Example path aliases, configure as needed for your project structure
-      // "@shared/*": ["path/to/shared/*"],
-      // "@backend/*": ["Backend/src/*"],
-      // "@frontend/*": ["Frontend/src/*"]
-    }
+    "forceConsistentCasingInFileNames": true
   },
-  "include": [
-    "./*.ts" // Tells TypeScript to include all .ts files directly in the current directory (Backend)
-    // "src/**/*.ts" // Previous configuration, kept for reference
-    // You can add more patterns if your files are in other locations.
-  ],
-  "exclude": [
-    "node_modules",
-    "dist", // Common output folder name
-    "**/*.spec.ts",
-    "**/*.test.ts",
-    "Frontend/WebView/node_modules", // Exclude if Frontend/WebView has its own dependencies
-    "Backend/node_modules"          // Exclude if Backend has its own dependencies
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
 }
