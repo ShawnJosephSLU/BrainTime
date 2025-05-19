@@ -22,6 +22,7 @@ BrainTime.org aspires to position itself as the leading exam creation platform, 
 - Node.js (v16+)
 - MongoDB (local or Atlas)
 - Stripe account for payment processing
+- SMTP server for email verification
 
 ### Installation
 
@@ -85,6 +86,29 @@ BrainTime.org aspires to position itself as the leading exam creation platform, 
      - `invoice.payment_failed`
    - Get the webhook signing secret and add it to your `.env` file
 
+### Setting Up Email Verification
+
+1. Configure your SMTP server details in the `.env` file:
+   ```
+   EMAIL_HOST=your_smtp_host
+   EMAIL_PORT=465
+   EMAIL_USER=your_email_username
+   EMAIL_PASS=your_email_password
+   ```
+
+2. Test the email service:
+   ```
+   cd Backend
+   npx ts-node src/scripts/testEmailService.ts your-test-email@example.com
+   ```
+   This will verify the connection to your SMTP server and send a test email.
+
+3. The system will automatically send verification emails when users register. You can test the full verification flow with:
+   ```
+   npx ts-node src/scripts/testEmailVerification.ts
+   ```
+   This interactive script will guide you through the registration, verification, and login process.
+
 ### Running the Application
 
 1. Start the backend server:
@@ -137,6 +161,7 @@ Backend/
 ├── models/           # MongoDB schema models
 ├── routes/           # API routes
 ├── services/         # Business logic
+│   ├── email/        # Email verification service
 │   └── stripe/       # Stripe integration
 ├── types/            # TypeScript type definitions
 ├── utils/            # Utility functions

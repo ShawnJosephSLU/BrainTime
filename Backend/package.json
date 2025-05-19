@@ -8,7 +8,9 @@
     "dev": "nodemon src/server.ts",
     "build": "tsc",
     "test:stripe": "ts-node src/scripts/testStripeConnection.ts",
-    "setup:stripe": "ts-node src/scripts/setupStripeProducts.ts"
+    "setup:stripe": "ts-node src/scripts/setupStripeProducts.ts",
+    "test:email": "ts-node src/scripts/testEmailService.ts",
+    "test:verification": "ts-node src/scripts/testEmailVerification.ts"
   },
   "keywords": [],
   "author": "",
@@ -17,12 +19,15 @@
   "dependencies": {
     "@types/express": "^5.0.2",
     "@types/node": "^22.15.19",
+    "@types/nodemailer": "^6.4.17",
+    "axios": "^1.9.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.15.0",
+    "nodemailer": "^7.0.3",
     "stripe": "^18.1.0",
     "typescript": "^5.8.3"
   },

@@ -8,7 +8,7 @@ import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 // Import routes
-// import authRoutes from './routes/auth';
+import authRoutes from './routes/auth';
 // import quizRoutes from './routes/quiz';
 // import groupRoutes from './routes/group';
 import subscriptionRoutes from './routes/subscription';
@@ -46,7 +46,7 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 // Apply routes
-// app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 // app.use('/api/quizzes', quizRoutes);
 // app.use('/api/groups', groupRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);

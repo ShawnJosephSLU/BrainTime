@@ -7,6 +7,9 @@ export interface IUser extends Document {
   stripeCustomerId?: string;
   subscriptionPlan?: 'Basic' | 'Pro' | 'Enterprise' | null;
   trialExpiry?: Date;
+  isEmailVerified: boolean;
+  verificationToken?: string;
+  verificationTokenExpiry?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
