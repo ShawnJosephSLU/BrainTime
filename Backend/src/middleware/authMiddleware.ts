@@ -5,7 +5,7 @@ import User from '../models/User';
 interface DecodedToken {
   userId: string;
   email: string;
-  role: string;
+  role: 'admin' | 'creator' | 'student';
   iat: number;
   exp: number;
 }
@@ -98,6 +98,72 @@ export const requireAdmin = (
 
   if (req.user.role !== 'admin') {
     res.status(403).json({ message: 'Admin access required.' });
+    return;
+  }
+
+  next();
+};
+
+/**
+ * Middleware to check if user has creator role
+ * Must be used after authenticateToken middleware
+ */
+export const requireCreator = (
+  req: Request & { user?: any },
+  res: Response,
+  next: NextFunction
+): void => {
+  if (!req.user) {
+    res.status(401).json({ message: 'Authentication required.' });
+    return;
+  }
+
+  if (req.user.role !== 'creator') {
+    res.status(403).json({ message: 'Creator access required.' });
+    return;
+  }
+
+  next();
+};
+
+/**
+ * Middleware to check if user has creator or admin role
+ * Must be used after authenticateToken middleware
+ */
+export const requireCreatorOrAdmin = (
+  req: Request & { user?: any },
+  res: Response,
+  next: NextFunction
+): void => {
+  if (!req.user) {
+    res.status(401).json({ message: 'Authentication required.' });
+    return;
+  }
+
+  if (req.user.role !== 'creator' && req.user.role !== 'admin') {
+    res.status(403).json({ message: 'Creator or Admin access required.' });
+    return;
+  }
+
+  next();
+};
+
+/**
+ * Middleware to check if user has student role
+ * Must be used after authenticateToken middleware
+ */
+export const requireStudent = (
+  req: Request & { user?: any },
+  res: Response,
+  next: NextFunction
+): void => {
+  if (!req.user) {
+    res.status(401).json({ message: 'Authentication required.' });
+    return;
+  }
+
+  if (req.user.role !== 'student') {
+    res.status(403).json({ message: 'Student access required.' });
     return;
   }
 

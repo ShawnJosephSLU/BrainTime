@@ -3,7 +3,7 @@ import { Document } from 'mongoose';
 export interface IUser extends Document {
   email: string;
   passwordHash: string;
-  role: 'admin' | 'student';
+  role: 'admin' | 'creator' | 'student';
   stripeCustomerId?: string;
   subscriptionPlan?: 'Basic' | 'Pro' | 'Enterprise' | null;
   trialExpiry?: Date;

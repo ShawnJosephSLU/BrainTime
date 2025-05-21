@@ -4,8 +4,15 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
 
-// Load environment variables
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// Load environment variables from root of the Backend folder
+dotenv.config();
+
+// Log important environment variables
+console.log('Environment Configuration:');
+console.log('- PORT:', process.env.PORT);
+console.log('- MONGODB_URI:', process.env.MONGODB_URI ? '✓ Set' : '✗ Not set');
+console.log('- JWT_SECRET:', process.env.JWT_SECRET ? '✓ Set' : '✗ Not set');
+console.log('- EMAIL_HOST:', process.env.EMAIL_HOST);
 
 // Import routes
 import authRoutes from './routes/auth';

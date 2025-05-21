@@ -16,7 +16,7 @@ const UserSchema: Schema = new Schema(
     },
     role: {
       type: String,
-      enum: ['admin', 'student'],
+      enum: ['admin', 'creator', 'student'],
       required: true,
     },
     stripeCustomerId: {

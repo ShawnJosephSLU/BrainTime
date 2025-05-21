@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import { generateVerificationToken, calculateTokenExpiry } from '../utils/tokenUtils';
-import { sendVerificationEmail } from '../services/email/emailService';
+import { sendVerificationEmail, sendEtherealVerificationEmail } from '../services/email/emailService';
 
 /**
  * Register a new user
@@ -50,15 +50,30 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const emailSent = await sendVerificationEmail(email, verificationToken, frontendUrl);
 
+    let etherealPreviewUrl = null;
+    
+    // If primary email fails, try Ethereal as fallback
     if (!emailSent) {
-      console.error('Failed to send verification email');
-      // We still create the user but log the email failure
+      console.log('Primary email service failed, trying Ethereal as fallback...');
+      const etherealResult = await sendEtherealVerificationEmail(email, verificationToken, frontendUrl);
+      
+      if (etherealResult.success) {
+        etherealPreviewUrl = etherealResult.previewUrl;
+        console.log('Ethereal email sent successfully. Preview URL:', etherealPreviewUrl);
+      } else {
+        console.error('Both primary and Ethereal email services failed');
+      }
     }
 
     res.status(201).json({
       message: 'User registered successfully. Please check your email to verify your account.',
       userId: newUser._id,
-      emailVerificationSent: emailSent,
+      emailVerificationSent: emailSent || !!etherealPreviewUrl,
+      // Include Ethereal preview URL in development environment
+      ...(process.env.NODE_ENV !== 'production' && etherealPreviewUrl && { 
+        etherealPreviewUrl,
+        etherealNote: 'For development: Open this URL to view the verification email'
+      })
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -203,12 +218,31 @@ export const resendVerification = async (req: Request, res: Response): Promise<v
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const emailSent = await sendVerificationEmail(email, verificationToken, frontendUrl);
 
+    let etherealPreviewUrl = null;
+    
+    // If primary email fails, try Ethereal as fallback
     if (!emailSent) {
-      res.status(500).json({ message: 'Failed to send verification email' });
-      return;
+      console.log('Primary email service failed, trying Ethereal as fallback...');
+      const etherealResult = await sendEtherealVerificationEmail(email, verificationToken, frontendUrl);
+      
+      if (etherealResult.success) {
+        etherealPreviewUrl = etherealResult.previewUrl;
+        console.log('Ethereal email sent successfully. Preview URL:', etherealPreviewUrl);
+      } else {
+        console.error('Both primary and Ethereal email services failed');
+        res.status(500).json({ message: 'Failed to send verification email' });
+        return;
+      }
     }
 
-    res.status(200).json({ message: 'Verification email sent successfully' });
+    res.status(200).json({
+      message: 'Verification email sent successfully',
+      // Include Ethereal preview URL in development environment
+      ...(process.env.NODE_ENV !== 'production' && etherealPreviewUrl && { 
+        etherealPreviewUrl,
+        etherealNote: 'For development: Open this URL to view the verification email'
+      })
+    });
   } catch (error) {
     console.error('Resend verification error:', error);
     res.status(500).json({ message: 'Server error during resend verification' });
