@@ -12,11 +12,7 @@ import {
   Alert,
   CircularProgress,
   Divider,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Chip,
-  Grid,
   FormControlLabel,
   Checkbox,
   Stepper,
@@ -26,7 +22,6 @@ import {
   Card,
   CardContent,
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -137,7 +132,7 @@ const GradeSubmission: React.FC = () => {
           setGradedAnswers(initialGradedAnswers);
           
           // Calculate initial total score
-          const autoScore = initialGradedAnswers.reduce((sum, a) => sum + (a.score || 0), 0);
+          const autoScore = initialGradedAnswers.reduce((sum: number, a: IAnswer) => sum + (a.score || 0), 0);
           setTotalScore(autoScore);
         }
       } catch (err: any) {
@@ -329,16 +324,16 @@ const GradeSubmission: React.FC = () => {
       )}
       
       <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={8}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+          <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 66.67%' } }}>
             <Typography variant="h4" gutterBottom>
               {submission.quizId.title}
             </Typography>
             <Typography variant="body1" color="text.secondary" gutterBottom>
               {submission.quizId.description}
             </Typography>
-          </Grid>
-          <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
+          </Box>
+          <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 33.33%' }, display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
             <Box sx={{ mb: 1 }}>
               <Typography variant="body2">
                 <strong>Student:</strong> {submission.studentId.firstName} {submission.studentId.lastName}
@@ -359,12 +354,12 @@ const GradeSubmission: React.FC = () => {
                 sx={{ mt: 1 }}
               />
             )}
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Paper>
       
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
+        <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 66.67%' } }}>
           <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
             <Typography variant="h5" gutterBottom>
               Question Responses
@@ -421,8 +416,8 @@ const GradeSubmission: React.FC = () => {
                         
                         <Divider sx={{ my: 2 }} />
                         
-                        <Grid container spacing={2}>
-                          <Grid item xs={12} md={6}>
+                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+                          <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 50%' } }}>
                             <Typography variant="subtitle2" gutterBottom>
                               Score:
                             </Typography>
@@ -441,8 +436,8 @@ const GradeSubmission: React.FC = () => {
                               label={`Out of ${questionPoints} points`}
                               variant="outlined"
                             />
-                          </Grid>
-                          <Grid item xs={12} md={6}>
+                          </Box>
+                          <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 50%' } }}>
                             <FormControlLabel
                               control={
                                 <Checkbox
@@ -458,8 +453,8 @@ const GradeSubmission: React.FC = () => {
                               }
                               label="Mark as correct (full points)"
                             />
-                          </Grid>
-                        </Grid>
+                          </Box>
+                        </Box>
                         
                         <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
                           Feedback:
@@ -565,51 +560,49 @@ const GradeSubmission: React.FC = () => {
               </Step>
             </Stepper>
           </Paper>
-        </Grid>
+        </Box>
         
-        <Grid item xs={12} md={4}>
-          <Paper elevation={3} sx={{ p: 3, position: 'sticky', top: '1rem' }}>
-            <Typography variant="h6" gutterBottom>
-              Grading Progress
+        <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 33.33%' }, p: 3, position: 'sticky', top: '1rem' }}>
+          <Typography variant="h6" gutterBottom>
+            Grading Progress
+          </Typography>
+          
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="body2" gutterBottom>
+              <strong>Total Questions:</strong> {submission.quizId.questions.length}
             </Typography>
-            
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="body2" gutterBottom>
-                <strong>Total Questions:</strong> {submission.quizId.questions.length}
-              </Typography>
-              <Typography variant="body2" gutterBottom>
-                <strong>Questions Graded:</strong> {gradedAnswers.filter(a => a.score !== undefined).length} / {submission.quizId.questions.length}
-              </Typography>
-              <Typography variant="body2" gutterBottom>
-                <strong>Current Score:</strong> {totalScore} / {maxPossibleScore}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Percentage:</strong> {Math.round((totalScore / maxPossibleScore) * 100)}%
-              </Typography>
-            </Box>
-            
-            <Button
-              variant="contained"
-              color="primary"
-              fullWidth
-              startIcon={<SaveIcon />}
-              onClick={handleSubmitGrade}
-              disabled={saving}
-              sx={{ mb: 2 }}
-            >
-              {saving ? 'Saving...' : 'Submit Grades'}
-            </Button>
-            
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={() => navigate(`/creator/quizzes/${submission.quizId._id}/submissions`)}
-            >
-              Cancel
-            </Button>
-          </Paper>
-        </Grid>
-      </Grid>
+            <Typography variant="body2" gutterBottom>
+              <strong>Questions Graded:</strong> {gradedAnswers.filter(a => a.score !== undefined).length} / {submission.quizId.questions.length}
+            </Typography>
+            <Typography variant="body2" gutterBottom>
+              <strong>Current Score:</strong> {totalScore} / {maxPossibleScore}
+            </Typography>
+            <Typography variant="body2">
+              <strong>Percentage:</strong> {Math.round((totalScore / maxPossibleScore) * 100)}%
+            </Typography>
+          </Box>
+          
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth
+            startIcon={<SaveIcon />}
+            onClick={handleSubmitGrade}
+            disabled={saving}
+            sx={{ mb: 2 }}
+          >
+            {saving ? 'Saving...' : 'Submit Grades'}
+          </Button>
+          
+          <Button
+            variant="outlined"
+            fullWidth
+            onClick={() => navigate(`/creator/quizzes/${submission.quizId._id}/submissions`)}
+          >
+            Cancel
+          </Button>
+        </Box>
+      </Box>
     </Box>
   );
 };

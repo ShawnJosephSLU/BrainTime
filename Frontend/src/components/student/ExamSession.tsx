@@ -18,22 +18,12 @@ import {
   RadioGroup,
   Radio,
   FormControlLabel,
-  Card,
-  CardContent,
-  CardActions,
   Divider,
   LinearProgress,
   Container,
-  Grid,
   AppBar,
   Toolbar,
-  Stepper,
-  Step,
-  StepLabel,
-  Badge,
   Chip,
-  useTheme,
-  useMediaQuery
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import TimerIcon from '@mui/icons-material/Timer';

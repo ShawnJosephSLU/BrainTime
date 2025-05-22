@@ -3,6 +3,12 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { AUTH_ENDPOINTS } from '../config/api';
+import SchoolIcon from '@mui/icons-material/School';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import InsightsIcon from '@mui/icons-material/Insights';
+import GroupsIcon from '@mui/icons-material/Groups';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
 
 interface SignInFormData {
   email: string;
@@ -130,198 +136,185 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row w-full">
-      {/* Left section with illustration - hidden on mobile */}
-      <div className="hidden md:flex md:w-2/5 bg-gradient-to-br from-primary-600 to-secondary-800 p-12 justify-center items-center">
+    <div className="min-h-screen flex flex-col md:flex-row w-full bg-white">
+      {/* Left section with illustration */}
+      <div className="hidden md:flex md:w-2/5 bg-gradient-to-br from-blue-500 to-blue-700 p-12 justify-center items-center">
         <div className="max-w-md text-white">
-          <h1 className="text-4xl font-bold mb-6">BrainTime</h1>
-          <h2 className="text-2xl font-semibold mb-4">Welcome back!</h2>
-          <p className="text-lg opacity-90 mb-8">
-            The premier platform for creating secure, timed assessments for your students.
+          <div className="flex items-center mb-8">
+            <SchoolIcon sx={{ fontSize: 40, marginRight: 2 }} />
+            <h1 className="text-4xl font-bold">BrainTime</h1>
+          </div>
+          <h2 className="text-2xl font-semibold mb-6">Welcome to the leading online assessment platform</h2>
+          <p className="text-lg opacity-90 mb-10">
+            Create secure, timed assessments for your students with comprehensive analytics and management tools.
           </p>
           
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div className="flex items-center">
-              <div className="bg-white/20 p-2 rounded-full mr-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <span>Create secure, timed assessments</span>
+              <CheckCircleOutlineIcon sx={{ marginRight: 2 }} />
+              <span className="text-lg">Create secure, timed assessments</span>
             </div>
             
             <div className="flex items-center">
-              <div className="bg-white/20 p-2 rounded-full mr-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <span>Advanced analytics and insights</span>
+              <InsightsIcon sx={{ marginRight: 2 }} />
+              <span className="text-lg">Advanced analytics and insights</span>
             </div>
             
             <div className="flex items-center">
-              <div className="bg-white/20 p-2 rounded-full mr-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              </div>
-              <span>Comprehensive student management</span>
+              <GroupsIcon sx={{ marginRight: 2 }} />
+              <span className="text-lg">Comprehensive student management</span>
             </div>
           </div>
         </div>
       </div>
       
       {/* Right section with form */}
-      <div className="flex-1 flex items-center justify-center p-0 bg-gray-900 dark:bg-gray-900 w-full">
-        <div className="w-full max-w-none px-8 py-10 flex flex-col items-center justify-center">
-          <div className="w-full max-w-md">
-            <div className="text-center mb-10">
-              {/* Mobile logo - shown only on mobile */}
-              <div className="md:hidden mb-8">
-                <h1 className="text-3xl font-bold text-primary-600">BrainTime</h1>
-                <p className="text-gray-500 mt-2">Sign in to your account</p>
-              </div>
-              
-              <h2 className="hidden md:block text-3xl font-bold text-white mb-4">Sign in</h2>
-              <p className="hidden md:block text-gray-400">
-                Access your BrainTime account
-              </p>
-              
-              {returnUrl && (
-                <p className="mt-2 text-secondary-400 text-sm">
-                  Sign in to continue to your previous session
-                </p>
-              )}
+      <div className="flex-1 flex items-center justify-center p-8 bg-white">
+        <div className="w-full max-w-md">
+          {/* Mobile logo - shown only on mobile */}
+          <div className="md:hidden flex flex-col items-center mb-10">
+            <div className="flex items-center mb-4">
+              <SchoolIcon sx={{ fontSize: 36, marginRight: 1, color: 'var(--primary-color)' }} />
+              <h1 className="text-3xl font-bold text-blue-600">BrainTime</h1>
+            </div>
+            <p className="text-gray-600 text-center">
+              Sign in to your account to create and manage assessments
+            </p>
+          </div>
+          
+          <div className="hidden md:block mb-10">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Sign in to your account</h2>
+            <p className="text-gray-600">
+              {returnUrl 
+                ? "Sign in to continue to your previous session" 
+                : "Access your BrainTime dashboard and tools"}
+            </p>
+          </div>
+          
+          {/* Verification message */}
+          {needsVerification && (
+            <Alert 
+              severity="warning" 
+              sx={{ 
+                marginBottom: 3,
+                backgroundColor: '#fff8e1',
+                color: '#b45309',
+                border: '1px solid #fef3c7',
+                '& .MuiAlert-icon': {
+                  color: '#d97706'
+                }
+              }}
+            >
+              <div className="mb-2 font-semibold">Email Verification Required</div>
+              <p className="mb-3">Your email address has not been verified. Please check your inbox for the verification link.</p>
+              <button
+                onClick={handleResendVerification}
+                disabled={isLoading}
+                className="btn btn-outline text-sm py-1 px-3 mt-1 w-auto"
+                style={{ display: 'flex', alignItems: 'center' }}
+              >
+                {isLoading ? (
+                  <CircularProgress size={16} sx={{ marginRight: 1, color: 'var(--primary-color)' }} />
+                ) : null}
+                Resend Verification Email
+              </button>
+            </Alert>
+          )}
+          
+          {/* Error message */}
+          {hasError && (
+            <Alert 
+              severity="error" 
+              sx={{ 
+                marginBottom: 3,
+                backgroundColor: '#fee2e2',
+                color: '#b91c1c',
+                border: '1px solid #fecaca',
+                '& .MuiAlert-icon': {
+                  color: '#ef4444'
+                }
+              }}
+            >
+              {hasError}
+            </Alert>
+          )}
+          
+          {/* Login form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email Address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="your@email.com"
+              />
             </div>
             
-            {needsVerification ? (
-              <div className="bg-yellow-900/20 text-yellow-400 p-6 rounded-lg mb-6">
-                <h3 className="text-xl font-medium mb-2">Email Verification Required</h3>
-                <p>Your email address has not been verified. Please check your inbox for the verification link or click the button below to resend the verification email.</p>
-                <button
-                  onClick={handleResendVerification}
-                  disabled={isLoading}
-                  className="mt-4 w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium 
-                             text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 
-                             focus:ring-yellow-500 focus:ring-offset-gray-900 transition duration-150 relative"
-                >
-                  {isLoading ? 'Sending...' : 'Resend Verification Email'}
-                </button>
-              </div>
-            ) : hasError ? (
-              <div className="bg-red-900/20 text-red-400 p-4 rounded-lg mb-6 text-sm">
-                {hasError}
-              </div>
-            ) : null}
-            
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
-                  Email address
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
                 </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className="appearance-none block w-full px-4 py-3 border border-gray-700 rounded-lg shadow-sm 
-                             placeholder-gray-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 
-                             bg-gray-800 text-white transition duration-150"
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-              </div>
-              
-              <div>
-                <div className="flex justify-between mb-1">
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-300">
-                    Password
-                  </label>
-                  <Link to="/forgot-password" className="text-sm text-secondary-400 hover:text-secondary-300">
-                    Forgot password?
-                  </Link>
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="appearance-none block w-full px-4 py-3 border border-gray-700 rounded-lg shadow-sm 
-                             placeholder-gray-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 
-                             bg-gray-800 text-white transition duration-150"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="rememberMe"
-                    name="rememberMe"
-                    type="checkbox"
-                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-700 rounded"
-                    checked={formData.rememberMe}
-                    onChange={handleChange}
-                  />
-                  <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-300">
-                    Remember me
-                  </label>
-                </div>
-              </div>
-              
-              <div>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium 
-                             text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 
-                             focus:ring-primary-500 focus:ring-offset-gray-900 transition duration-150 relative"
-                >
-                  {isLoading ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Signing in...
-                    </>
-                  ) : (
-                    'Sign in'
-                  )}
-                </button>
-              </div>
-            </form>
-            
-            <div className="mt-8 text-center">
-              <p className="text-sm text-gray-400">
-                Don't have an account?{' '}
-                <Link to="/signup" className="font-medium text-secondary-400 hover:text-secondary-300">
-                  Sign up
+                <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800">
+                  Forgot password?
                 </Link>
-              </p>
+              </div>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="••••••••"
+              />
             </div>
             
-            <div className="mt-10 pt-8 border-t border-gray-800">
-              <div className="flex justify-center space-x-6">
-                <a href="#" className="text-gray-500 hover:text-gray-400">
-                  <span className="sr-only">Privacy Policy</span>
-                  <span className="text-xs">Privacy Policy</span>
-                </a>
-                <a href="#" className="text-gray-500 hover:text-gray-400">
-                  <span className="sr-only">Terms of Service</span>
-                  <span className="text-xs">Terms of Service</span>
-                </a>
-                <a href="#" className="text-gray-500 hover:text-gray-400">
-                  <span className="sr-only">Contact</span>
-                  <span className="text-xs">Contact</span>
-                </a>
-              </div>
+            <div className="flex items-center">
+              <input
+                id="rememberMe"
+                name="rememberMe"
+                type="checkbox"
+                checked={formData.rememberMe}
+                onChange={handleChange}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
+                Remember me
+              </label>
             </div>
+            
+            <div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex justify-center items-center"
+              >
+                {isLoading ? (
+                  <CircularProgress size={24} sx={{ color: 'white', marginRight: 1 }} />
+                ) : null}
+                Sign in
+              </button>
+            </div>
+          </form>
+          
+          <div className="mt-8 text-center">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{' '}
+              <Link to="/signup" className="font-medium text-blue-600 hover:text-blue-800">
+                Sign up
+              </Link>
+            </p>
           </div>
         </div>
       </div>
