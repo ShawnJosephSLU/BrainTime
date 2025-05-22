@@ -66,9 +66,12 @@ export interface IStudentEnrollment extends Document {
 }
 
 export interface IAnswer {
-  _id: string;
+  _id?: string;
   questionId: string;
   studentAnswer: string | string[];
+  score?: number;
+  feedback?: string;
+  isCorrect?: boolean;
 }
 
 export interface IResponse extends Document {
@@ -81,6 +84,8 @@ export interface IResponse extends Document {
   feedback?: string;
   gradedBy?: string;
   gradedAt?: Date;
+  isGraded: boolean;
+  totalScore?: number;
   createdAt: Date;
   updatedAt: Date;
 }

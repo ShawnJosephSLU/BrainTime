@@ -14,6 +14,9 @@ import {
   authenticateForQuiz,
   saveAnswer,
   submitExam,
+  getQuizSubmissions,
+  getSubmissionDetails,
+  gradeSubmission
 } from '../controllers/quizController';
 
 const router = express.Router();
@@ -54,6 +57,28 @@ router.patch(
   authenticateToken,
   roleMiddleware(['creator', 'admin']),
   wrapAuthHandler(toggleQuizLiveStatus)
+);
+
+// Submission and grading routes
+router.get(
+  '/:quizId/submissions',
+  authenticateToken,
+  roleMiddleware(['creator', 'admin']),
+  wrapAuthHandler(getQuizSubmissions)
+);
+
+router.get(
+  '/submissions/:submissionId',
+  authenticateToken,
+  roleMiddleware(['creator', 'admin']),
+  wrapAuthHandler(getSubmissionDetails)
+);
+
+router.post(
+  '/submissions/:submissionId/grade',
+  authenticateToken,
+  roleMiddleware(['creator', 'admin']),
+  wrapAuthHandler(gradeSubmission)
 );
 
 // Public routes

@@ -493,19 +493,172 @@ export const submitExam = async (req: AuthenticatedRequest, res: Response): Prom
       studentAnswer: answer
     }));
     
-    // Create a response record with the student's answers
-    const response = new ResponseModel({
+    // Check if a response already exists for this student and quiz
+    let response = await ResponseModel.findOne({
       quizId: session.quizId,
-      studentId: req.user.id,
-      answers,
-      submittedAt: new Date()
+      studentId: req.user.id
     });
     
-    await response.save();
+    if (response) {
+      // Update existing response
+      response.answers = answers;
+      response.submittedAt = new Date();
+      await response.save();
+    } else {
+      // Create a new response record with the student's answers
+      response = new ResponseModel({
+        quizId: session.quizId,
+        studentId: req.user.id,
+        answers,
+        submittedAt: new Date()
+      });
+      
+      await response.save();
+    }
     
     res.status(StatusCodes.OK).json({ message: 'Exam submitted successfully', responseId: response._id });
   } catch (error) {
     console.error('Error submitting exam:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Failed to submit exam' });
+  }
+};
+
+// Get all student submissions for a specific quiz
+export const getQuizSubmissions = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    // Check if user is authenticated as creator
+    if (!req.user) {
+      res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Authentication required' });
+      return;
+    }
+
+    const { quizId } = req.params;
+    
+    // Verify user is the quiz creator
+    const quiz = await Quiz.findOne({ _id: quizId, adminId: req.user.id });
+    
+    if (!quiz) {
+      res.status(StatusCodes.NOT_FOUND).json({ message: 'Quiz not found or you are not authorized' });
+      return;
+    }
+    
+    // Get all submissions for this quiz with student info
+    const submissions = await ResponseModel.find({ quizId })
+      .populate('studentId', 'email firstName lastName')
+      .select('studentId submittedAt isGraded totalScore')
+      .sort({ submittedAt: -1 });
+    
+    res.status(StatusCodes.OK).json(submissions);
+  } catch (error) {
+    console.error('Error fetching quiz submissions:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Failed to fetch quiz submissions' });
+  }
+};
+
+// Get a specific student submission details
+export const getSubmissionDetails = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    // Check if user is authenticated
+    if (!req.user) {
+      res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Authentication required' });
+      return;
+    }
+
+    const { submissionId } = req.params;
+    
+    const submission = await ResponseModel.findById(submissionId)
+      .populate('studentId', 'email firstName lastName')
+      .populate('quizId');
+    
+    if (!submission) {
+      res.status(StatusCodes.NOT_FOUND).json({ message: 'Submission not found' });
+      return;
+    }
+    
+    // Verify user is the quiz creator
+    const quiz = await Quiz.findOne({ 
+      _id: submission.quizId, 
+      adminId: req.user.id 
+    });
+    
+    if (!quiz) {
+      res.status(StatusCodes.FORBIDDEN).json({ message: 'You are not authorized to view this submission' });
+      return;
+    }
+    
+    res.status(StatusCodes.OK).json(submission);
+  } catch (error) {
+    console.error('Error fetching submission details:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Failed to fetch submission details' });
+  }
+};
+
+// Grade a student submission
+export const gradeSubmission = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    // Check if user is authenticated
+    if (!req.user) {
+      res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Authentication required' });
+      return;
+    }
+
+    const { submissionId } = req.params;
+    const { gradedAnswers, feedback, totalScore } = req.body;
+    
+    if (!Array.isArray(gradedAnswers)) {
+      res.status(StatusCodes.BAD_REQUEST).json({ message: 'Graded answers must be an array' });
+      return;
+    }
+    
+    const submission = await ResponseModel.findById(submissionId);
+    
+    if (!submission) {
+      res.status(StatusCodes.NOT_FOUND).json({ message: 'Submission not found' });
+      return;
+    }
+    
+    // Verify user is the quiz creator
+    const quiz = await Quiz.findOne({ 
+      _id: submission.quizId, 
+      adminId: req.user.id 
+    });
+    
+    if (!quiz) {
+      res.status(StatusCodes.FORBIDDEN).json({ message: 'You are not authorized to grade this submission' });
+      return;
+    }
+    
+    // Update each answer with its score and feedback
+    submission.answers = submission.answers.map(existingAnswer => {
+      const gradedAnswer = gradedAnswers.find(
+        g => g.questionId.toString() === existingAnswer.questionId.toString()
+      );
+      
+      if (gradedAnswer) {
+        return {
+          ...existingAnswer,
+          score: gradedAnswer.score,
+          feedback: gradedAnswer.feedback
+        };
+      }
+      
+      return existingAnswer;
+    });
+    
+    // Update submission status
+    submission.isGraded = true;
+    submission.gradedAt = new Date();
+    submission.feedback = feedback || '';
+    submission.totalScore = totalScore;
+    
+    await submission.save();
+    
+    res.status(StatusCodes.OK).json({ 
+      message: 'Submission graded successfully',
+      submission
+    });
+  } catch (error) {
+    console.error('Error grading submission:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Failed to grade submission' });
   }
 }; 

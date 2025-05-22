@@ -24,6 +24,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 
 interface IExam {
   _id: string;
@@ -218,6 +219,16 @@ const ExamDetail: React.FC = () => {
             onClick={handleEdit}
           >
             Edit Exam
+          </Button>
+          
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<AssignmentTurnedInIcon />}
+            onClick={() => navigate(`/creator/exams/${examId}/submissions`)}
+            sx={{ ml: 1 }}
+          >
+            View Submissions
           </Button>
         </Box>
       </Box>

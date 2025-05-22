@@ -10,6 +10,18 @@ const AnswerSchema: Schema = new Schema({
     type: Schema.Types.Mixed, // Can be string or array of strings
     required: true,
   },
+  score: {
+    type: Number,
+    default: 0,
+  },
+  feedback: {
+    type: String,
+    default: '',
+  },
+  isCorrect: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const ResponseSchema: Schema = new Schema(
@@ -43,6 +55,7 @@ const ResponseSchema: Schema = new Schema(
     },
     feedback: {
       type: String,
+      default: '',
     },
     gradedBy: {
       type: Schema.Types.ObjectId,
@@ -50,6 +63,14 @@ const ResponseSchema: Schema = new Schema(
     },
     gradedAt: {
       type: Date,
+    },
+    isGraded: {
+      type: Boolean,
+      default: false,
+    },
+    totalScore: {
+      type: Number,
+      default: 0,
     },
   },
   {

@@ -205,6 +205,12 @@ const CreatorDashboard = () => {
                               View
                             </button>
                             <button 
+                              onClick={() => navigate(`/creator/exams/${exam._id}/submissions`)}
+                              className="px-2 py-1 text-xs bg-gray-700 hover:bg-gray-600 rounded-md transition duration-150 mr-2"
+                            >
+                              Submissions
+                            </button>
+                            <button 
                               onClick={() => navigate(`/creator/exams/edit/${exam._id}`)}
                               className="px-2 py-1 text-xs bg-primary-600 hover:bg-primary-700 rounded-md transition duration-150"
                             >

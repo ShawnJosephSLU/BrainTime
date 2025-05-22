@@ -14,6 +14,8 @@ import ExamSession from './components/student/ExamSession';
 import AvailableExams from './components/student/AvailableExams';
 import ExamDetail from './components/creator/ExamDetail';
 import GroupsList from './components/creator/GroupsList';
+import SubmissionsList from './components/creator/SubmissionsList';
+import GradeSubmission from './components/creator/GradeSubmission';
 
 function App() {
   return (
@@ -42,6 +44,8 @@ function App() {
             <Route path="/creator/exams/edit/:examId" element={<ExamCreator />} />
             <Route path="/creator/exams/:examId" element={<ExamDetail />} />
             <Route path="/creator/groups" element={<GroupsList />} />
+            <Route path="/creator/exams/:examId/submissions" element={<SubmissionsList />} />
+            <Route path="/creator/exams/:examId/submissions/:submissionId/grade" element={<GradeSubmission />} />
             {/* Add more creator routes as needed */}
           </Route>
           
