@@ -1,12 +1,22 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useEffect } from 'react';
 
 interface ProtectedRouteProps {
   allowedRoles?: ('admin' | 'creator' | 'student')[];
 }
 
 const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
-  const { isAuthenticated, user, isLoading } = useAuth();
+  const { isAuthenticated, user, isLoading, setAuthHeaders, refreshAuth } = useAuth();
+  const location = useLocation();
+
+  // Refresh auth headers on route change
+  useEffect(() => {
+    // Try to refresh authentication state
+    refreshAuth();
+    // Always set headers after a refresh attempt
+    setAuthHeaders();
+  }, [location.pathname]);
   
   // Show loading state while checking authentication
   if (isLoading) {
@@ -23,9 +33,10 @@ const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     );
   }
   
-  // If not authenticated, redirect to login
+  // If not authenticated, redirect to login with return URL
   if (!isAuthenticated) {
-    return <Navigate to="/signin" replace />;
+    const returnUrl = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/signin?returnUrl=${returnUrl}`} replace />;
   }
   
   // If allowedRoles is specified, check if user has the right role

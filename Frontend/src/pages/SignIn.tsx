@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { AUTH_ENDPOINTS } from '../config/api';
@@ -14,13 +14,18 @@ const SignIn = () => {
   const [formData, setFormData] = useState<SignInFormData>({
     email: '',
     password: '',
-    rememberMe: false
+    rememberMe: localStorage.getItem('rememberMe') === 'true'
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [hasError, setHasError] = useState<string | null>(null);
   const [needsVerification, setNeedsVerification] = useState<boolean>(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const location = useLocation();
+  const { login, setAuthHeaders } = useAuth();
+  
+  // Get returnUrl from query params
+  const searchParams = new URLSearchParams(location.search);
+  const returnUrl = searchParams.get('returnUrl') || '';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -59,15 +64,23 @@ const SignIn = () => {
       // Use the login function from AuthContext
       login(token, user);
       
-      // Redirect based on user role
-      if (user.role === 'student') {
-        navigate('/student/dashboard');
-      } else if (user.role === 'creator') {
-        navigate('/creator/dashboard');
-      } else if (user.role === 'admin') {
-        navigate('/admin/dashboard');
+      // Set authorization headers for future requests
+      setAuthHeaders();
+      
+      // Redirect based on returnUrl or user role
+      if (returnUrl) {
+        navigate(returnUrl);
       } else {
-        navigate('/');
+        // Default redirects based on user role
+        if (user.role === 'student') {
+          navigate('/student/dashboard');
+        } else if (user.role === 'creator') {
+          navigate('/creator/dashboard');
+        } else if (user.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/');
+        }
       }
       
     } catch (error) {
@@ -173,6 +186,12 @@ const SignIn = () => {
               <p className="hidden md:block text-gray-400">
                 Access your BrainTime account
               </p>
+              
+              {returnUrl && (
+                <p className="mt-2 text-secondary-400 text-sm">
+                  Sign in to continue to your previous session
+                </p>
+              )}
             </div>
             
             {needsVerification ? (

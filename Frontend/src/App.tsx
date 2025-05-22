@@ -8,6 +8,12 @@ import StudentDashboard from './pages/student/Dashboard';
 import CreatorDashboard from './pages/creator/Dashboard';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
+import ExamCreator from './components/creator/ExamCreator';
+import ExamsList from './components/creator/ExamsList';
+import ExamSession from './components/student/ExamSession';
+import AvailableExams from './components/student/AvailableExams';
+import ExamDetail from './components/creator/ExamDetail';
+import GroupsList from './components/creator/GroupsList';
 
 function App() {
   return (
@@ -23,12 +29,19 @@ function App() {
           {/* Protected student routes */}
           <Route element={<ProtectedRoute allowedRoles={['student']} />}>
             <Route path="/student/dashboard" element={<StudentDashboard />} />
+            <Route path="/student/exams" element={<AvailableExams />} />
+            <Route path="/student/exams/:quizId" element={<ExamSession />} />
             {/* Add more student routes as needed */}
           </Route>
           
           {/* Protected creator routes */}
           <Route element={<ProtectedRoute allowedRoles={['creator']} />}>
             <Route path="/creator/dashboard" element={<CreatorDashboard />} />
+            <Route path="/creator/exams" element={<ExamsList />} />
+            <Route path="/creator/exams/create" element={<ExamCreator />} />
+            <Route path="/creator/exams/edit/:examId" element={<ExamCreator />} />
+            <Route path="/creator/exams/:examId" element={<ExamDetail />} />
+            <Route path="/creator/groups" element={<GroupsList />} />
             {/* Add more creator routes as needed */}
           </Route>
           

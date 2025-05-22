@@ -20,12 +20,19 @@ const QuestionSchema: Schema = new Schema({
   gifUrl: {
     type: String,
   },
+  videoUrl: {
+    type: String,
+  },
   options: {
     type: [String],
   },
   correctAnswer: {
     type: Schema.Types.Mixed, // Can be string or array of strings
     required: true,
+  },
+  points: {
+    type: Number,
+    default: 1,
   },
 });
 
@@ -48,7 +55,7 @@ const QuizSchema: Schema = new Schema(
     groupId: {
       type: Schema.Types.ObjectId,
       ref: "Group",
-      required: true,
+      required: false, // Can be assigned to multiple groups later
     },
     questions: {
       type: [QuestionSchema],
@@ -67,6 +74,30 @@ const QuizSchema: Schema = new Schema(
       required: true,
     },
     allowInternet: {
+      type: Boolean,
+      default: false,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    isLive: {
+      type: Boolean,
+      default: false,
+    },
+    groups: [{
+      type: Schema.Types.ObjectId,
+      ref: "Group"
+    }],
+    autoSubmit: {
+      type: Boolean,
+      default: true,
+    },
+    shuffleQuestions: {
+      type: Boolean,
+      default: false,
+    },
+    showResults: {
       type: Boolean,
       default: false,
     },

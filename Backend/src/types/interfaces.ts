@@ -21,28 +21,39 @@ export interface IQuestion {
   audioUrl?: string;
   imageUrl?: string;
   gifUrl?: string;
+  videoUrl?: string;
   options?: string[];
   correctAnswer: string | string[];
+  points: number;
 }
 
 export interface IQuiz extends Document {
   adminId: string;
   title: string;
   description: string;
-  groupId: string;
+  groupId?: string;
   questions: IQuestion[];
   startTime: Date;
   endTime: Date;
   duration: number;
   allowInternet: boolean;
+  password: string;
+  isLive: boolean;
+  groups?: string[];
+  autoSubmit: boolean;
+  shuffleQuestions: boolean;
+  showResults: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface IGroup extends Document {
-  adminId: string;
   name: string;
+  description: string;
+  creatorId: string;
+  enrollmentCode: string;
   students: string[];
+  exams: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,6 +76,11 @@ export interface IResponse extends Document {
   studentId: string;
   answers: IAnswer[];
   submittedAt: Date;
+  score?: number;
+  maxScore?: number;
+  feedback?: string;
+  gradedBy?: string;
+  gradedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -76,6 +92,23 @@ export interface IStripeSubscription extends Document {
   status: 'active' | 'past_due' | 'cancelled';
   startDate: Date;
   endDate: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ICurrentAnswer {
+  questionId: string;
+  answer: string | string[];
+}
+
+export interface IExamSession extends Document {
+  quizId: string;
+  studentId: string;
+  startTime: Date;
+  endTime?: Date;
+  isCompleted: boolean;
+  lastActivity: Date;
+  currentAnswers: ICurrentAnswer[];
   createdAt: Date;
   updatedAt: Date;
 }

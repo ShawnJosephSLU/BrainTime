@@ -16,8 +16,8 @@ console.log('- EMAIL_HOST:', process.env.EMAIL_HOST);
 
 // Import routes
 import authRoutes from './routes/auth';
-// import quizRoutes from './routes/quiz';
-// import groupRoutes from './routes/group';
+import quizRoutes from './routes/quiz';
+import groupRoutes from './routes/group';
 import subscriptionRoutes from './routes/subscription';
 import webhookRoutes from './routes/webhook';
 
@@ -54,8 +54,8 @@ app.get('/', (req: Request, res: Response) => {
 
 // Apply routes
 app.use('/api/auth', authRoutes);
-// app.use('/api/quizzes', quizRoutes);
-// app.use('/api/groups', groupRoutes);
+app.use('/api/quizzes', quizRoutes);
+app.use('/api/groups', groupRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 
 // Start server
