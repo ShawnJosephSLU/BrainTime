@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import { generateVerificationToken, calculateTokenExpiry } from '../utils/tokenUtils';
-import { sendVerificationEmail, sendEtherealVerificationEmail } from '../services/email/emailService';
+import { sendVerificationEmail, sendEtherealVerificationEmail, sendPasswordResetEmail } from '../services/email/emailService';
 
 /**
  * Register a new user
@@ -246,5 +246,74 @@ export const resendVerification = async (req: Request, res: Response): Promise<v
   } catch (error) {
     console.error('Resend verification error:', error);
     res.status(500).json({ message: 'Server error during resend verification' });
+  }
+};
+
+/**
+ * Request password reset
+ * @route POST /api/auth/forgot-password
+ */
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400).json({ message: 'Email is required' });
+      return;
+    }
+    const user = await User.findOne({ email });
+    if (!user) {
+      // For security, always respond with success
+      res.status(200).json({ message: 'If your email exists in our system, a reset link has been sent.' });
+      return;
+    }
+    // Generate reset token and expiry (1 hour)
+    const resetToken = generateVerificationToken();
+    const resetExpires = new Date(Date.now() + 60 * 60 * 1000);
+    user.passwordResetToken = resetToken;
+    user.passwordResetExpires = resetExpires;
+    await user.save();
+    // Send reset email
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    await sendPasswordResetEmail(email, resetToken, frontendUrl);
+    res.status(200).json({ message: 'If your email exists in our system, a reset link has been sent.' });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ message: 'Server error during password reset request' });
+  }
+};
+
+/**
+ * Reset password
+ * @route POST /api/auth/reset-password
+ */
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) {
+      res.status(400).json({ message: 'Token and new password are required' });
+      return;
+    }
+    // Validate password strength
+    const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/;
+    if (!passwordRegex.test(newPassword)) {
+      res.status(400).json({ message: 'Password must be at least 8 characters with at least one number and one special character' });
+      return;
+    }
+    const user = await User.findOne({
+      passwordResetToken: token,
+      passwordResetExpires: { $gt: new Date() },
+    });
+    if (!user) {
+      res.status(400).json({ message: 'Invalid or expired reset token' });
+      return;
+    }
+    user.passwordHash = newPassword;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+    res.status(200).json({ message: 'Password reset successful. You can now log in.' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ message: 'Server error during password reset' });
   }
 };

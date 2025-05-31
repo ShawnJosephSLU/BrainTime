@@ -92,6 +92,52 @@ export const sendVerificationEmail = async (
 };
 
 /**
+ * Send a password reset email to a user
+ * @param to Recipient email address
+ * @param token Password reset token
+ * @param frontendUrl Frontend URL for constructing reset link
+ */
+export const sendPasswordResetEmail = async (
+  to: string,
+  token: string,
+  frontendUrl: string
+): Promise<boolean> => {
+  try {
+    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+    const mailOptions = {
+      from: `"BrainTime" <${process.env.EMAIL_USER}>`,
+      to,
+      subject: 'Reset Your BrainTime Password',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #4a4a4a;">Password Reset Request</h2>
+          <p>You requested a password reset for your BrainTime account.</p>
+          <div style="margin: 30px 0;">
+            <a href="${resetLink}" 
+               style="background-color: #4CAF50; color: white; padding: 12px 20px; 
+                      text-decoration: none; border-radius: 4px; font-weight: bold;">
+              Reset Password
+            </a>
+          </div>
+          <p>If the button above doesn't work, you can also click on the link below or copy and paste it into your browser:</p>
+          <p><a href="${resetLink}">${resetLink}</a></p>
+          <p>This reset link will expire in 1 hour.</p>
+          <p>If you did not request a password reset, you can safely ignore this email.</p>
+          <hr style="border: 1px solid #eee; margin: 20px 0;">
+          <p style="color: #777; font-size: 12px;">© ${new Date().getFullYear()} BrainTime. All rights reserved.</p>
+        </div>
+      `,
+    };
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Password reset email sent: %s', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    return false;
+  }
+};
+
+/**
  * Verify the email transporter connection
  */
 export const verifyEmailConnection = async (): Promise<boolean> => {
