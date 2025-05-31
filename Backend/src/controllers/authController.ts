@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+import { IUser } from '../types/interfaces';
 import { generateVerificationToken, calculateTokenExpiry } from '../utils/tokenUtils';
 import { sendVerificationEmail, sendEtherealVerificationEmail, sendPasswordResetEmail } from '../services/email/emailService';
 
@@ -11,19 +12,34 @@ import { sendVerificationEmail, sendEtherealVerificationEmail, sendPasswordReset
  */
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password, role, name, username } = req.body;
 
     // Validate input
     if (!email || !password || !role) {
       res.status(400).json({ message: 'Email, password, and role are required' });
       return;
     }
+    
+    // Basic password strength check (example: min 8 characters)
+    if (password.length < 8) {
+        res.status(400).json({ message: 'Password must be at least 8 characters long' });
+        return;
+    }
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    // Check if user already exists by email
+    const existingUserByEmail = await User.findOne({ email });
+    if (existingUserByEmail) {
       res.status(400).json({ message: 'User with this email already exists' });
       return;
+    }
+
+    // Check if username is provided and if it already exists
+    if (username) {
+        const existingUserByUsername = await User.findOne({ username });
+        if (existingUserByUsername) {
+            res.status(400).json({ message: 'Username already taken' });
+            return;
+        }
     }
 
     // Hash password
@@ -39,6 +55,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       email,
       passwordHash,
       role,
+      name,
+      username,
       isEmailVerified: false,
       verificationToken,
       verificationTokenExpiry,
@@ -124,22 +142,22 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
  */
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password } = req.body;
+    const { loginIdentifier, password } = req.body;
 
-    // Validate input
-    if (!email || !password) {
-      res.status(400).json({ message: 'Email and password are required' });
+    if (!loginIdentifier || !password) {
+      res.status(400).json({ message: 'Email/Username and password are required' });
       return;
     }
 
-    // Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({
+      $or: [{ email: loginIdentifier }, { username: loginIdentifier }],
+    }).select('+passwordHash') as IUser | null;
+
     if (!user) {
       res.status(401).json({ message: 'Invalid credentials' });
       return;
     }
 
-    // Check if email is verified
     if (!user.isEmailVerified) {
       res.status(401).json({ 
         message: 'Email not verified. Please check your email for verification link.',
@@ -148,26 +166,45 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Check password
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash!);
     if (!isPasswordValid) {
       res.status(401).json({ message: 'Invalid credentials' });
       return;
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
+    const ACCESS_TOKEN_SECRET = process.env.JWT_SECRET || 'your_strong_jwt_secret_here';
+    const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'your_strong_refresh_secret_here';
+
+    // Generate JWT access token (short-lived)
+    const accessToken = jwt.sign(
       { userId: user._id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'your_strong_jwt_secret_here',
-      { expiresIn: '24h' }
+      ACCESS_TOKEN_SECRET,
+      { expiresIn: '15m' } // Example: 15 minutes
     );
+
+    // Generate JWT refresh token (long-lived)
+    const refreshToken = jwt.sign(
+      { userId: user._id, email: user.email }, // Refresh token might have less info
+      REFRESH_TOKEN_SECRET,
+      { expiresIn: '7d' } // Example: 7 days
+    );
+
+    // Send refresh token as an HTTPOnly cookie
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+      sameSite: 'strict', // Mitigate CSRF
+      maxAge: 7 * 24 * 60 * 60 * 1000, // Corresponds to 7 days
+    });
 
     res.status(200).json({
       message: 'Login successful',
-      token,
+      accessToken, // Send access token in the response body
       user: {
         id: user._id,
         email: user.email,
+        username: user.username,
+        name: user.name,
         role: user.role,
         subscriptionPlan: user.subscriptionPlan,
       },
@@ -315,5 +352,136 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
   } catch (error) {
     console.error('Reset password error:', error);
     res.status(500).json({ message: 'Server error during password reset' });
+  }
+};
+
+/**
+ * Logout user
+ * @route POST /api/auth/logout
+ */
+export const logout = async (req: Request, res: Response): Promise<void> => {
+  // For JWT, logout is typically handled client-side by deleting the token.
+  // Server-side, we can implement a token blacklist if needed for immediate invalidation.
+  // For now, we'll just send a success message.
+  res.status(200).json({ message: 'Logout successful. Please clear your token on the client-side.' });
+};
+
+/**
+ * Update user profile (name, email, username)
+ * @route PUT /api/auth/profile
+ * @requiresAuth true
+ */
+export const updateProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = (req as any).user.userId as string;
+    const { name, email, username } = req.body;
+
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    const user = await User.findById(userId) as IUser | null;
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    let emailChanged = false;
+    if (email && email !== user.email) {
+      const existingUserWithEmail = await User.findOne({ email }) as IUser | null;
+      if (existingUserWithEmail && existingUserWithEmail._id!.toString() !== user._id!.toString()) {
+        res.status(400).json({ message: 'Email already in use by another account' });
+        return;
+      }
+      user.email = email;
+      user.isEmailVerified = false;
+      user.verificationToken = generateVerificationToken();
+      user.verificationTokenExpiry = calculateTokenExpiry();
+      emailChanged = true;
+    }
+
+    if (username && username !== user.username) {
+        const existingUserWithUsername = await User.findOne({ username }) as IUser | null;
+        if (existingUserWithUsername && existingUserWithUsername._id!.toString() !== user._id!.toString()) {
+            res.status(400).json({ message: 'Username already in use' });
+            return;
+        }
+        user.username = username;
+    }
+
+    if (name) {
+      user.name = name;
+    }
+
+    await (user as any).save();
+
+    if (emailChanged) {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      await sendVerificationEmail(user.email, user.verificationToken!, frontendUrl);
+      res.status(200).json({
+        message: 'Profile updated. Please check your new email address to verify it.',
+        user: { id: user._id, name: user.name, email: user.email, username: user.username, isEmailVerified: user.isEmailVerified },
+      });
+    } else {
+      res.status(200).json({
+        message: 'Profile updated successfully',
+        user: { id: user._id, name: user.name, email: user.email, username: user.username },
+      });
+    }
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ message: 'Server error during profile update' });
+  }
+};
+
+/**
+ * Update user password
+ * @route PUT /api/auth/password
+ * @requiresAuth true
+ */
+export const updatePassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = (req as any).user.userId; // Assuming userId is attached by auth middleware
+    const { currentPassword, newPassword } = req.body;
+
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ message: 'Current password and new password are required' });
+      return;
+    }
+
+    // Basic password strength check (example: min 8 characters)
+    if (newPassword.length < 8) {
+        res.status(400).json({ message: 'New password must be at least 8 characters long' });
+        return;
+    }
+
+    const user = await User.findById(userId).select('+passwordHash'); // Ensure passwordHash is selected
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isPasswordValid) {
+      res.status(401).json({ message: 'Invalid current password' });
+      return;
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    user.passwordHash = await bcrypt.hash(newPassword, saltRounds);
+    await user.save();
+
+    res.status(200).json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Update password error:', error);
+    res.status(500).json({ message: 'Server error during password update' });
   }
 };

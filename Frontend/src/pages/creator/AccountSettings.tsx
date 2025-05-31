@@ -62,7 +62,7 @@ const AccountSettings: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<any>(null);
   const [tabValue, setTabValue] = useState<number>(0);
-  const { user, refreshAuth, setAuthHeaders } = useAuth();
+  const { user, setAuthHeaders } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -133,9 +133,9 @@ const AccountSettings: React.FC = () => {
     navigate('/creator/subscription/plans');
   };
 
-  // Format date from ISO string to human-readable format
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  // Format date from ISO string or timestamp to human-readable format
+  const formatDate = (dateInput: string | number | Date) => {
+    const date = new Date(dateInput);
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
       month: 'long',

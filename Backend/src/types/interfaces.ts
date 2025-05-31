@@ -1,9 +1,13 @@
 import { Document } from 'mongoose';
 
 export interface IUser extends Document {
+  _id?: any;
+  userId?: string;
   email: string;
   passwordHash: string;
   role: 'admin' | 'creator' | 'student';
+  name?: string;
+  username?: string;
   stripeCustomerId?: string;
   subscriptionPlan?: 'Basic' | 'Pro' | 'Enterprise' | null;
   trialExpiry?: Date;

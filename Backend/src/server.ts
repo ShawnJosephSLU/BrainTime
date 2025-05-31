@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
+import cookieParser from 'cookie-parser';
+import { trackUserActivity, refreshToken } from './middleware/sessionMiddleware';
 
 // Load environment variables from root of the Backend folder
 dotenv.config();
@@ -20,20 +22,24 @@ import quizRoutes from './routes/quiz';
 import groupRoutes from './routes/group';
 import subscriptionRoutes from './routes/subscription';
 import webhookRoutes from './routes/webhook';
+import adminRoutes from './routes/admin';
 
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 5023;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true,
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(trackUserActivity);
 
 // Webhook routes - This must be before the express.json() middleware for Stripe webhooks
 app.use('/webhooks', webhookRoutes);
-
-// Regular middleware for other routes
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // Connect to MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/braintime';
@@ -57,6 +63,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/quizzes', quizRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/admin', adminRoutes);
+
+// Test route for refreshToken (can be removed or integrated into authRoutes properly later)
+// app.post('/api/refresh-token', refreshToken);
 
 // Start server
 app.listen(PORT, () => {

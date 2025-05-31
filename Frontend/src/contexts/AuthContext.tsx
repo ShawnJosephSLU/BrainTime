@@ -7,7 +7,7 @@ import { jwtDecode } from 'jwt-decode';
 export interface User {
   id: string;
   email: string;
-  role: string;
+  role: 'admin' | 'creator' | 'student';
   subscriptionPlan?: string;
   isEmailVerified?: boolean;
   name?: string;
