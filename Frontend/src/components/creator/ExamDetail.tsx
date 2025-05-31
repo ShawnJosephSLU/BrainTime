@@ -31,6 +31,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import HelpIcon from '@mui/icons-material/Help';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import TimerIcon from '@mui/icons-material/Timer';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 
 interface IExam {
   _id: string;
@@ -77,13 +78,14 @@ const TabPanel = (props: TabPanelProps) => {
 const ExamDetail: React.FC = () => {
   const { examId } = useParams<{ examId: string }>();
   const navigate = useNavigate();
-  const { setAuthHeaders, refreshAuth } = useAuth();
+  const { setAuthHeaders, refreshAuth, user } = useAuth();
   const [exam, setExam] = useState<IExam | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isTogglingLive, setIsTogglingLive] = useState<boolean>(false);
   const [tabValue, setTabValue] = useState(0);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState<boolean>(false);
 
   useEffect(() => {
     // Refresh auth and fetch data
@@ -143,6 +145,19 @@ const ExamDetail: React.FC = () => {
       setAuthHeaders();
       
       const newStatus = !exam.isLive;
+      
+      if (newStatus && user?.subscriptionPlan) {
+        // Check if user has reached their exam limit
+        const liveExamsCount = (user as any).liveExamsCount || 0;
+        const examsLimit = getExamsLimit(user.subscriptionPlan);
+        
+        if (liveExamsCount >= examsLimit) {
+          setShowUpgradePrompt(true);
+          setIsTogglingLive(false);
+          return;
+        }
+      }
+      
       await axios.patch(`${API_URL}/api/quizzes/${exam._id}/toggle-live`, {
         isLive: newStatus
       });
@@ -165,6 +180,24 @@ const ExamDetail: React.FC = () => {
     } finally {
       setIsTogglingLive(false);
     }
+  };
+
+  // Helper function to get the exams limit based on subscription plan
+  const getExamsLimit = (plan: string): number => {
+    switch (plan) {
+      case 'basic':
+        return 5;
+      case 'pro':
+        return 50;
+      case 'enterprise':
+        return 999; // Unlimited for practical purposes
+      default:
+        return 3; // Default free tier limit
+    }
+  };
+
+  const handleNavigateToPlans = () => {
+    navigate('/creator/subscription/plans');
   };
 
   const handleEdit = () => {
@@ -344,6 +377,26 @@ const ExamDetail: React.FC = () => {
       {success && (
         <Alert severity="success" sx={{ mb: 3 }}>
           {success}
+        </Alert>
+      )}
+      
+      {/* Subscription upgrade prompt */}
+      {showUpgradePrompt && (
+        <Alert 
+          severity="warning" 
+          sx={{ mb: 3 }}
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={handleNavigateToPlans}
+              startIcon={<ShoppingCartIcon />}
+            >
+              Upgrade
+            </Button>
+          }
+        >
+          You've reached the maximum number of live exams for your current plan. Upgrade your subscription to publish more exams.
         </Alert>
       )}
       

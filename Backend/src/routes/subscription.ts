@@ -22,6 +22,9 @@ router.post('/update/:subscriptionId', subscriptionController.updateSubscription
 // Create a portal session
 router.post('/portal-session', subscriptionController.createPortalSession as any);
 
+// Verify a checkout session
+router.get('/verify-session/:sessionId', subscriptionController.verifySession as any);
+
 // Get a subscription (must be last to avoid conflicts)
 router.get('/:subscriptionId', subscriptionController.getSubscription as any);
 

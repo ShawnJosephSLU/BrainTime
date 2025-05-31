@@ -44,7 +44,4 @@ const GroupSchema: Schema = new Schema(
   }
 );
 
-// Create index on enrollment code for fast lookups
-GroupSchema.index({ enrollmentCode: 1 });
-
-export default mongoose.model<IGroup>('Group', GroupSchema); 
+export default mongoose.model<IGroup>('Group', GroupSchema);

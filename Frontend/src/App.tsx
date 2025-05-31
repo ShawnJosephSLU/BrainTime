@@ -17,6 +17,10 @@ import ExamDetail from './components/creator/ExamDetail';
 import GroupsList from './components/creator/GroupsList';
 import SubmissionsList from './components/creator/SubmissionsList';
 import GradeSubmission from './components/creator/GradeSubmission';
+import SubscriptionPlans from './pages/creator/SubscriptionPlans';
+import SubscriptionSuccess from './pages/creator/SubscriptionSuccess';
+import SubscriptionCancel from './pages/creator/SubscriptionCancel';
+import AccountSettings from './pages/creator/AccountSettings';
 
 // Wrapper component to provide Layout with children from Outlet
 const LayoutWrapper = () => (
@@ -57,6 +61,11 @@ function App() {
               <Route path="/creator/groups" element={<GroupsList />} />
               <Route path="/creator/exams/:examId/submissions" element={<SubmissionsList />} />
               <Route path="/creator/exams/:examId/submissions/:submissionId/grade" element={<GradeSubmission />} />
+              {/* Subscription routes */}
+              <Route path="/creator/subscription/plans" element={<SubscriptionPlans />} />
+              <Route path="/creator/subscription/success" element={<SubscriptionSuccess />} />
+              <Route path="/creator/subscription/cancel" element={<SubscriptionCancel />} />
+              <Route path="/creator/account" element={<AccountSettings />} />
               {/* Add more creator routes as needed */}
             </Route>
           </Route>

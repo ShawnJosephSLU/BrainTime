@@ -20,8 +20,8 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
     }
 
     const domain = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const successUrl = `${domain}/subscription/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${domain}/subscription/cancel`;
+    const successUrl = `${domain}/creator/subscription/success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${domain}/creator/subscription/cancel`;
 
     const session = await subscriptionService.createCheckoutSession({
       customerId,
@@ -111,13 +111,45 @@ export const createPortalSession = async (req: Request, res: Response) => {
     }
 
     const domain = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const returnUrl = `${domain}/account`;
+    const returnUrl = `${domain}/creator/account`;
 
     const session = await subscriptionService.createPortalSession(customerId, returnUrl);
     res.status(200).json({ url: session.url });
   } catch (error) {
     console.error('Error creating portal session:', error);
     res.status(500).json({ error: 'Failed to create portal session' });
+  }
+};
+
+export const verifySession = async (req: Request, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+
+    if (!sessionId) {
+      return res.status(400).json({ error: 'Session ID is required' });
+    }
+
+    // Retrieve the checkout session from Stripe
+    const session = await subscriptionService.retrieveCheckoutSession(sessionId);
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Checkout session not found' });
+    }
+
+    // If the session has a subscription, retrieve it
+    if (session.subscription) {
+      const subscription = await subscriptionService.getSubscription(session.subscription as string);
+      
+      // Here you would typically update the user's subscription status in your database
+      // This is handled by the webhook, but could be done here as well for immediate feedback
+      
+      return res.status(200).json({ success: true, subscription });
+    }
+
+    res.status(200).json({ success: true, session });
+  } catch (error) {
+    console.error('Error verifying session:', error);
+    res.status(500).json({ error: 'Failed to verify checkout session' });
   }
 };
 
@@ -129,4 +161,5 @@ export default {
   getSubscription,
   getCustomerSubscriptions,
   createPortalSession,
+  verifySession,
 };

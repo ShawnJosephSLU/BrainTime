@@ -1,14 +1,14 @@
-import AWS from 'aws-sdk';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuidv4 } from 'uuid';
 
-// Configure AWS SDK
-AWS.config.update({
+const s3 = new S3Client({
   region: process.env.AWS_REGION,
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
 });
-
-const s3 = new AWS.S3();
 const bucketName = process.env.AWS_S3_BUCKET;
 
 /**
@@ -27,16 +27,17 @@ export const uploadToS3 = async (
     throw new Error('AWS S3 bucket name is not configured');
   }
 
-  const params = {
+  const s3Key = key || `uploads/${uuidv4()}`;
+  const command = new PutObjectCommand({
     Bucket: bucketName,
-    Key: key || `uploads/${uuidv4()}`,
+    Key: s3Key,
     Body: fileBuffer,
     ContentType: contentType,
     ACL: 'public-read',
-  };
-
-  const uploadResult = await s3.upload(params).promise();
-  return uploadResult.Location;
+  });
+  await s3.send(command);
+  // Construct the public URL (assuming public-read ACL)
+  return `https://${bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
 };
 
 /**
@@ -49,12 +50,11 @@ export const deleteFromS3 = async (key: string): Promise<void> => {
     throw new Error('AWS S3 bucket name is not configured');
   }
 
-  const params = {
+  const command = new DeleteObjectCommand({
     Bucket: bucketName,
     Key: key,
-  };
-
-  await s3.deleteObject(params).promise();
+  });
+  await s3.send(command);
 };
 
 /**
@@ -73,13 +73,11 @@ export const generatePresignedUrl = async (
     throw new Error('AWS S3 bucket name is not configured');
   }
 
-  const params = {
+  const command = new PutObjectCommand({
     Bucket: bucketName,
     Key: key,
-    Expires: expiresIn,
     ContentType: contentType,
     ACL: 'public-read',
-  };
-
-  return s3.getSignedUrlPromise('putObject', params);
-}; 
+  });
+  return getSignedUrl(s3, command, { expiresIn });
+};

@@ -53,6 +53,18 @@ export const createCheckoutSession = async ({
   }
 };
 
+export const retrieveCheckoutSession = async (sessionId: string) => {
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['subscription', 'customer']
+    });
+    return session;
+  } catch (error) {
+    console.error('Error retrieving checkout session:', error);
+    throw error;
+  }
+};
+
 export const cancelSubscription = async (subscriptionId: string) => {
   try {
     const canceledSubscription = await stripe.subscriptions.cancel(subscriptionId);
@@ -89,7 +101,9 @@ export const updateSubscription = async (subscriptionId: string, newPriceId: str
 
 export const getSubscription = async (subscriptionId: string) => {
   try {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+      expand: ['default_payment_method', 'items.data.price.product']
+    });
     return subscription;
   } catch (error) {
     console.error('Error retrieving subscription:', error);
@@ -102,6 +116,7 @@ export const getCustomerSubscriptions = async (customerId: string) => {
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: 'active',
+      expand: ['data.default_payment_method', 'data.items.data.price.product']
     });
     return subscriptions;
   } catch (error) {
@@ -126,6 +141,7 @@ export const createPortalSession = async (customerId: string, returnUrl: string)
 export default {
   createCustomer,
   createCheckoutSession,
+  retrieveCheckoutSession,
   cancelSubscription,
   updateSubscription,
   getSubscription,

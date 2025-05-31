@@ -4,11 +4,16 @@ import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 
-interface User {
+export interface User {
   id: string;
   email: string;
-  role: 'admin' | 'creator' | 'student';
-  subscriptionPlan?: 'Basic' | 'Pro' | 'Enterprise' | null;
+  role: string;
+  subscriptionPlan?: string;
+  isEmailVerified?: boolean;
+  name?: string;
+  customerId?: string;
+  createdAt?: string;
+  liveExamsCount?: number;
 }
 
 interface DecodedToken {
