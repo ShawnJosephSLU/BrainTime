@@ -16,6 +16,7 @@ export interface IUser extends Document {
   verificationTokenExpiry?: Date;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
+  suspended?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

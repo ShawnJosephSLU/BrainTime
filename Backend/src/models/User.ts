@@ -72,6 +72,10 @@ const UserSchema: Schema = new Schema(
       type: Date,
       default: null,
     },
+    suspended: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
