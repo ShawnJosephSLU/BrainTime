@@ -6,7 +6,12 @@ import {
   Checkbox,
   Typography,
   Paper,
-  Grid
+  Grid,
+  Card,
+  CardContent,
+  RadioGroup,
+  Radio,
+  Chip
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -81,6 +86,64 @@ const ExamBasicDetailsForm: React.FC<ExamBasicDetailsFormProps> = ({ examData, o
               variant="outlined"
               sx={{ borderRadius: '8px' }}
             />
+          </Grid>
+
+          {/* Visibility Setting */}
+          <Grid component="div" size={{ xs: 12 }}>
+            <Card sx={{ borderRadius: '8px', border: '1px solid', borderColor: 'divider' }}>
+              <CardContent sx={{ p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    Assessment Visibility
+                  </Typography>
+                  <Chip 
+                    label={examData.isPublic ? 'Public' : 'Private'} 
+                    color={examData.isPublic ? 'success' : 'default'}
+                    size="small"
+                  />
+                </Box>
+                
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Choose who can discover and access this assessment
+                </Typography>
+
+                <RadioGroup
+                  value={examData.isPublic ? 'public' : 'private'}
+                  onChange={(e) => onChange({ isPublic: e.target.value === 'public' })}
+                  sx={{ gap: 2 }}
+                >
+                  <Box sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: '8px' }}>
+                    <FormControlLabel
+                      value="private"
+                      control={<Radio />}
+                      label={
+                        <Box>
+                          <Typography variant="body2" fontWeight="medium">Private Assessment</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Only students you directly assign can access this assessment. Requires the access password.
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </Box>
+                  
+                  <Box sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: '8px' }}>
+                    <FormControlLabel
+                      value="public"
+                      control={<Radio />}
+                      label={
+                        <Box>
+                          <Typography variant="body2" fontWeight="medium">Public Assessment</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Visible on the public homepage. Anyone can discover and take this assessment with the access password.
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </Box>
+                </RadioGroup>
+              </CardContent>
+            </Card>
           </Grid>
 
           {/* Date and Time Settings */}

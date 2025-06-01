@@ -102,6 +102,7 @@ const ExamCreator: React.FC = () => {
     autoSubmit: true,
     shuffleQuestions: false,
     showResults: false,
+    isPublic: false, // Default to private for security
   });
 
   const handleExamDataChange = (updatedData: Partial<IExamData>) => {
@@ -403,6 +404,19 @@ const ExamCreator: React.FC = () => {
                   <Typography variant="body1">{examData.title}</Typography>
                 </Box>
                 <Box>
+                  <Typography variant="body2" color="text.secondary">Visibility</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body1">
+                      {examData.isPublic ? 'Public' : 'Private'}
+                    </Typography>
+                    <Chip 
+                      label={examData.isPublic ? 'Public' : 'Private'} 
+                      color={examData.isPublic ? 'success' : 'default'}
+                      size="small"
+                    />
+                  </Box>
+                </Box>
+                <Box>
                   <Typography variant="body2" color="text.secondary">Questions</Typography>
                   <Typography variant="body1">{examData.questions.length}</Typography>
                 </Box>
@@ -413,6 +427,10 @@ const ExamCreator: React.FC = () => {
                 <Box>
                   <Typography variant="body2" color="text.secondary">Start Time</Typography>
                   <Typography variant="body1">{examData.startTime.toLocaleString()}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">End Time</Typography>
+                  <Typography variant="body1">{examData.endTime.toLocaleString()}</Typography>
                 </Box>
               </Box>
             </Paper>

@@ -30,7 +30,8 @@ export const createQuiz = async (req: AuthenticatedRequest, res: Response): Prom
       groups,
       autoSubmit,
       shuffleQuestions,
-      showResults
+      showResults,
+      isPublic
     } = req.body;
 
     // Basic validation
@@ -59,6 +60,7 @@ export const createQuiz = async (req: AuthenticatedRequest, res: Response): Prom
       allowInternet: allowInternet || false,
       password: hashedPassword,
       isLive: false, // Default to not live
+      isPublic: isPublic || false, // Default to private for security
       groups: groups || [],
       autoSubmit: autoSubmit !== undefined ? autoSubmit : true,
       shuffleQuestions: shuffleQuestions || false,

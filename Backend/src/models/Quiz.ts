@@ -98,6 +98,10 @@ const QuizSchema: Schema = new Schema(
       type: Boolean,
       default: false,
     },
+    isPublic: {
+      type: Boolean,
+      default: false,
+    },
     groups: [{
       type: Schema.Types.ObjectId,
       ref: "Group"

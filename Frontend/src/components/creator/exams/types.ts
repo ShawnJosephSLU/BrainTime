@@ -27,6 +27,7 @@ export interface IExamData {
   autoSubmit: boolean;
   shuffleQuestions: boolean;
   showResults: boolean;
+  isPublic: boolean;
 }
 
 export const emptyQuestion: IQuestion = {

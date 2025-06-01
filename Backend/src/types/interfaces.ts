@@ -46,6 +46,7 @@ export interface IQuiz extends Document {
   allowInternet: boolean;
   password: string;
   isLive: boolean;
+  isPublic: boolean;
   groups?: string[];
   autoSubmit: boolean;
   shuffleQuestions: boolean;
