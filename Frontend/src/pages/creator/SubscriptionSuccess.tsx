@@ -17,8 +17,7 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 const SubscriptionSuccess: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [subscription, setSubscription] = useState<any>(null);
-  const { user, refreshAuth, setAuthHeaders } = useAuth();
+  const { refreshAuth, setAuthHeaders } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -43,8 +42,6 @@ const SubscriptionSuccess: React.FC = () => {
         const response = await axios.get(`${API_URL}/api/subscriptions/verify-session/${sessionId}`);
         
         if (response.data?.subscription) {
-          setSubscription(response.data.subscription);
-          
           // Refresh auth to get updated user data with subscription info
           refreshAuth();
         } else {

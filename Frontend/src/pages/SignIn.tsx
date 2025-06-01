@@ -60,15 +60,15 @@ const SignIn = () => {
     
     try {
       const response = await axios.post(AUTH_ENDPOINTS.LOGIN, {
-        email: formData.email,
+        loginIdentifier: formData.email,
         password: formData.password
       });
       
       // Get token and user info
-      const { token, user } = response.data;
+      const { accessToken, user } = response.data;
       
       // Use the login function from AuthContext
-      login(token, user);
+      login(accessToken, user);
       
       // Set authorization headers for future requests
       setAuthHeaders();

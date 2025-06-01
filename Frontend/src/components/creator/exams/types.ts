@@ -1,14 +1,18 @@
 export interface IQuestion {
   _id?: string;
-  type: 'MCQ' | 'shortAnswer' | 'longAnswer' | 'trueFalse';
+  type: 'MCQ' | 'multipleSelect' | 'shortAnswer' | 'longAnswer' | 'trueFalse' | 'fillInTheBlank' | 'matching' | 'ordering';
   text: string;
   audioUrl?: string;
   imageUrl?: string;
   gifUrl?: string;
   videoUrl?: string;
   options?: string[];
-  correctAnswer: string | string[];
+  correctAnswer: string | string[] | any;
   points: number;
+  timeLimit?: number | null; // in seconds
+  explanation?: string;
+  matchingPairs?: { left: string; right: string }[];
+  orderItems?: string[];
 }
 
 export interface IExamData {
@@ -31,4 +35,8 @@ export const emptyQuestion: IQuestion = {
   options: ['', ''],
   correctAnswer: '',
   points: 1,
+  timeLimit: null,
+  explanation: '',
+  matchingPairs: [],
+  orderItems: [],
 }; 

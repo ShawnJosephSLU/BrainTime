@@ -49,6 +49,8 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })<{
   open?: boolean;
 }>(({ theme, open }) => ({
   flexGrow: 1,
+  width: '100%',
+  maxWidth: '100%',
   transition: theme.transitions.create('margin', {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
@@ -56,12 +58,14 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })<{
   marginLeft: 0,
   backgroundColor: '#f9fafb',
   minHeight: '100vh',
+  overflow: 'hidden', // Prevent horizontal scroll
   ...(open && {
     transition: theme.transitions.create('margin', {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
     }),
     marginLeft: `${drawerWidth}px`,
+    width: `calc(100% - ${drawerWidth}px)`,
   }),
 }));
 

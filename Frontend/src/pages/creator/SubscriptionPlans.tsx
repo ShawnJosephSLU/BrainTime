@@ -192,7 +192,7 @@ const SubscriptionPlans: React.FC = () => {
           const isProcessing = processingPlanId === priceId;
           
           return (
-            <Grid item xs={12} md={4} key={planType}>
+            <Grid size={{ xs: 12, md: 4 }} key={planType}>
               <Card 
                 elevation={3} 
                 sx={{ 
@@ -279,28 +279,28 @@ const SubscriptionPlans: React.FC = () => {
         </Typography>
         
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <CheckIcon color="success" sx={{ mr: 1 }} />
               <Typography variant="body2">Secure exam environment</Typography>
             </Box>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <CheckIcon color="success" sx={{ mr: 1 }} />
               <Typography variant="body2">Detailed analytics</Typography>
             </Box>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <CheckIcon color="success" sx={{ mr: 1 }} />
               <Typography variant="body2">Multiple question types</Typography>
             </Box>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <CheckIcon color="success" sx={{ mr: 1 }} />
               <Typography variant="body2">Customer support</Typography>

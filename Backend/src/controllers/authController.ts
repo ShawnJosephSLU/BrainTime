@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import * as bcrypt from 'bcrypt';
+import * as jwt from 'jsonwebtoken';
 import User from '../models/User';
 import { IUser } from '../types/interfaces';
 import { generateVerificationToken, calculateTokenExpiry } from '../utils/tokenUtils';
@@ -344,7 +344,10 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
       res.status(400).json({ message: 'Invalid or expired reset token' });
       return;
     }
-    user.passwordHash = newPassword;
+    
+    // Hash the new password before saving
+    const saltRounds = 10;
+    user.passwordHash = await bcrypt.hash(newPassword, saltRounds);
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
     await user.save();

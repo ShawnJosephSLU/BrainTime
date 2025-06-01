@@ -194,7 +194,15 @@ const CreatorDashboard = () => {
   };
 
   return (
-    <Box sx={{ py: 3, px: 4 }}>
+    <Box sx={{ 
+      py: 3, 
+      px: 4, 
+      width: '100%',
+      maxWidth: '100%',
+      minHeight: 'calc(100vh - 64px)', // Account for header height
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
           Creator Dashboard
@@ -228,7 +236,8 @@ const CreatorDashboard = () => {
           mb: 4, 
           borderRadius: '10px',
           border: '1px solid',
-          borderColor: 'divider'
+          borderColor: 'divider',
+          width: '100%'
         }}
       >
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, gap: 3 }}>
@@ -316,8 +325,8 @@ const CreatorDashboard = () => {
       </Paper>
 
       {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid component="div" item xs={12} sm={6} md={3}>
+      <Grid container spacing={3} sx={{ mb: 4, width: '100%' }}>
+        <Grid component="div" size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard 
             title="Active Exams" 
             value={stats.activeExams} 
@@ -326,7 +335,7 @@ const CreatorDashboard = () => {
             change={8}
           />
         </Grid>
-        <Grid component="div" item xs={12} sm={6} md={3}>
+        <Grid component="div" size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard 
             title="Student Enrollments" 
             value={stats.studentEnrollments} 
@@ -335,7 +344,7 @@ const CreatorDashboard = () => {
             change={15}
           />
         </Grid>
-        <Grid component="div" item xs={12} sm={6} md={3}>
+        <Grid component="div" size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard 
             title="Completed Exams" 
             value={stats.completedExams} 
@@ -344,7 +353,7 @@ const CreatorDashboard = () => {
             change={5}
           />
         </Grid>
-        <Grid component="div" item xs={12} sm={6} md={3}>
+        <Grid component="div" size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard 
             title="Total Groups" 
             value={3} 
@@ -362,7 +371,8 @@ const CreatorDashboard = () => {
           p: 3, 
           borderRadius: '10px',
           border: '1px solid',
-          borderColor: 'divider'
+          borderColor: 'divider',
+          width: '100%'
         }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -402,9 +412,9 @@ const CreatorDashboard = () => {
         )}
 
         {recentExams.length > 0 && (
-          <Grid container spacing={3}>
+          <Grid container spacing={3} sx={{ width: '100%' }}>
             {recentExams.map((exam) => (
-              <Grid component="div" item xs={12} key={exam._id}>
+              <Grid component="div" size={{ xs: 12 }} key={exam._id}>
                 <Card 
                   elevation={0} 
                   sx={{ 

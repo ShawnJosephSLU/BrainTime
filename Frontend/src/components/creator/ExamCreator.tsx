@@ -1,20 +1,94 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { API_URL } from '../../config/api';
 import { useNavigate } from 'react-router-dom';
 import { formatISO } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
+import {
+  Box,
+  Paper,
+  Typography,
+  Button,
+  Stepper,
+  Step,
+  StepLabel,
+  Alert,
+  CircularProgress,
+  Chip,
+  Divider,
+  Container
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import PreviewIcon from '@mui/icons-material/Preview';
+import SaveIcon from '@mui/icons-material/Save';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+
 import ExamBasicDetailsForm from './exams/ExamBasicDetailsForm';
 import QuestionForm from './exams/QuestionForm';
+import AssessmentPreview from './exams/AssessmentPreview';
 import { emptyQuestion } from './exams/types';
 import type { IExamData, IQuestion } from './exams/types';
+
+const steps = ['Basic Details', 'Questions', 'Review & Publish'];
+
+interface AutosaveIndicatorProps {
+  isAutosaving: boolean;
+  lastSaved: Date | null;
+  isDirty: boolean;
+}
+
+const AutosaveIndicator: React.FC<AutosaveIndicatorProps> = ({ isAutosaving, lastSaved, isDirty }) => {
+  if (isAutosaving) {
+    return (
+      <Chip
+        size="small"
+        color="warning"
+        label="Saving..."
+        icon={<CircularProgress size={12} color="inherit" />}
+      />
+    );
+  }
+  
+  if (lastSaved) {
+    return (
+      <Chip
+        size="small"
+        color="success"
+        label={`Saved ${lastSaved.toLocaleTimeString()}`}
+      />
+    );
+  }
+  
+  if (isDirty) {
+    return (
+      <Chip
+        size="small"
+        color="warning"
+        label="Unsaved changes"
+      />
+    );
+  }
+  
+  return (
+    <Chip
+      size="small"
+      color="default"
+      label="Ready"
+    />
+  );
+};
 
 const ExamCreator: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [activeStep, setActiveStep] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState<boolean>(false);
+  const [isAutosaving, setIsAutosaving] = useState<boolean>(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isDirty, setIsDirty] = useState<boolean>(false);
   
   const [examData, setExamData] = useState<IExamData>({
     title: '',
@@ -32,6 +106,71 @@ const ExamCreator: React.FC = () => {
 
   const handleExamDataChange = (updatedData: Partial<IExamData>) => {
     setExamData({ ...examData, ...updatedData });
+    setIsDirty(true);
+  };
+
+  // Autosave functionality
+  const autosave = useCallback(async () => {
+    if (!isDirty || !examData.title) return;
+
+    try {
+      setIsAutosaving(true);
+      const autosaveKey = `braintime_exam_autosave_${user?.id || 'anonymous'}`;
+      const autosaveData = {
+        ...examData,
+        startTime: examData.startTime.toISOString(),
+        endTime: examData.endTime.toISOString(),
+        lastSaved: new Date().toISOString()
+      };
+      
+      localStorage.setItem(autosaveKey, JSON.stringify(autosaveData));
+      setLastSaved(new Date());
+      setIsDirty(false);
+    } catch (error) {
+      console.error('Autosave failed:', error);
+    } finally {
+      setIsAutosaving(false);
+    }
+  }, [examData, isDirty, user?.id]);
+
+  // Load from autosave on component mount
+  useEffect(() => {
+    const autosaveKey = `braintime_exam_autosave_${user?.id || 'anonymous'}`;
+    const saved = localStorage.getItem(autosaveKey);
+    
+    if (saved) {
+      try {
+        const parsedData = JSON.parse(saved);
+        if (parsedData.title) {
+          const shouldRestore = window.confirm(
+            `Found an unsaved exam "${parsedData.title}" from ${new Date(parsedData.lastSaved).toLocaleString()}. Would you like to restore it?`
+          );
+          
+          if (shouldRestore) {
+            setExamData({
+              ...parsedData,
+              startTime: new Date(parsedData.startTime),
+              endTime: new Date(parsedData.endTime)
+            });
+            setLastSaved(new Date(parsedData.lastSaved));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load autosave:', error);
+      }
+    }
+  }, [user?.id]);
+
+  // Autosave every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(autosave, 30000);
+    return () => clearInterval(interval);
+  }, [autosave]);
+
+  // Clear autosave on successful submission
+  const clearAutosave = () => {
+    const autosaveKey = `braintime_exam_autosave_${user?.id || 'anonymous'}`;
+    localStorage.removeItem(autosaveKey);
   };
 
   const handleQuestionChange = (index: number, field: string, value: any) => {
@@ -41,6 +180,7 @@ const ExamCreator: React.FC = () => {
       [field]: value,
     };
     setExamData({ ...examData, questions: updatedQuestions });
+    setIsDirty(true);
   };
 
   const handleOptionChange = (questionIndex: number, optionIndex: number, value: string) => {
@@ -109,45 +249,74 @@ const ExamCreator: React.FC = () => {
     setSuccess(`${mediaType} uploaded successfully`);
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const validateBasicDetails = (): boolean => {
+    if (!examData.title || !examData.description || !examData.password) {
+      setError('Please fill in all required fields');
+      return false;
+    }
+    if (examData.startTime >= examData.endTime) {
+      setError('End time must be after start time');
+      return false;
+    }
+    if (examData.duration <= 0) {
+      setError('Duration must be greater than 0');
+      return false;
+    }
+    return true;
+  };
+
+  const validateQuestions = (): boolean => {
+    if (examData.questions.length === 0) {
+      setError('Please add at least one question');
+      return false;
+    }
+
+    for (let i = 0; i < examData.questions.length; i++) {
+      const q = examData.questions[i];
+      if (!q.text) {
+        setError(`Question ${i + 1} is missing text`);
+        return false;
+      }
+
+      if (q.type === 'MCQ' && (!q.options || q.options.length < 2)) {
+        setError(`Question ${i + 1} must have at least two options`);
+        return false;
+      }
+
+      if (!q.correctAnswer || (Array.isArray(q.correctAnswer) && q.correctAnswer.length === 0)) {
+        setError(`Question ${i + 1} is missing a correct answer`);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleNext = () => {
+    setError(null);
+    
+    if (activeStep === 0 && !validateBasicDetails()) {
+      return;
+    }
+    
+    if (activeStep === 1 && !validateQuestions()) {
+      return;
+    }
+    
+    setActiveStep((prevStep) => prevStep + 1);
+  };
+
+  const handleBack = () => {
+    setActiveStep((prevStep) => prevStep - 1);
+  };
+
+  const handleSubmit = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Validate form data
-      if (!examData.title || !examData.description || !examData.password) {
-        setError('Please fill in all required fields');
+      if (!validateBasicDetails() || !validateQuestions()) {
         setIsLoading(false);
         return;
-      }
-
-      if (examData.questions.length === 0) {
-        setError('Please add at least one question');
-        setIsLoading(false);
-        return;
-      }
-
-      // Validate each question
-      for (let i = 0; i < examData.questions.length; i++) {
-        const q = examData.questions[i];
-        if (!q.text) {
-          setError(`Question ${i + 1} is missing text`);
-          setIsLoading(false);
-          return;
-        }
-
-        if (q.type === 'MCQ' && (!q.options || q.options.length < 2)) {
-          setError(`Question ${i + 1} must have at least two options`);
-          setIsLoading(false);
-          return;
-        }
-
-        if (!q.correctAnswer || (Array.isArray(q.correctAnswer) && q.correctAnswer.length === 0)) {
-          setError(`Question ${i + 1} is missing a correct answer`);
-          setIsLoading(false);
-          return;
-        }
       }
 
       await axios.post(`${API_URL}/api/quizzes/create`, {
@@ -157,6 +326,7 @@ const ExamCreator: React.FC = () => {
       });
 
       setSuccess('Exam created successfully!');
+      clearAutosave(); // Clear autosave on successful submission
       
       // Navigate to quiz list
       setTimeout(() => {
@@ -170,71 +340,31 @@ const ExamCreator: React.FC = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <header className="bg-gray-800 shadow-md">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center">
-            <h1 className="text-xl font-bold text-primary-500">BrainTime</h1>
-            <span className="ml-2 px-2 py-1 bg-secondary-900 text-secondary-300 text-xs rounded-md">Creator</span>
-          </div>
-          <div className="flex items-center">
-            <span className="mr-4">{user?.email}</span>
-            <button 
-              onClick={() => navigate('/creator/dashboard')}
-              className="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded-md transition duration-150"
-            >
-              Dashboard
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">Create New Examination</h2>
-            <button 
-              onClick={() => navigate('/creator/exams')}
-              className="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded-md transition duration-150"
-            >
-              Back to Exams
-            </button>
-          </div>
-          
-          {error && (
-            <div className="bg-red-900/50 border border-red-800 text-red-200 px-4 py-3 rounded mb-6">
-              {error}
-            </div>
-          )}
-          
-          {success && (
-            <div className="bg-green-900/50 border border-green-800 text-green-200 px-4 py-3 rounded mb-6">
-              {success}
-            </div>
-          )}
-          
-          <form onSubmit={handleSubmit} className="bg-gray-800 rounded-lg shadow-lg p-6">
-            <ExamBasicDetailsForm 
-              examData={examData} 
-              onChange={handleExamDataChange} 
-            />
+  const renderStepContent = () => {
+    switch (activeStep) {
+      case 0:
+        return (
+          <ExamBasicDetailsForm 
+            examData={examData} 
+            onChange={handleExamDataChange} 
+          />
+        );
+      case 1:
+        return (
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Typography variant="h6">Questions</Typography>
+              <Button
+                startIcon={<AddIcon />}
+                variant="contained"
+                onClick={addQuestion}
+                sx={{ borderRadius: '8px' }}
+              >
+                Add Question
+              </Button>
+            </Box>
             
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Questions</h3>
-                <button
-                  type="button"
-                  onClick={addQuestion}
-                  className="px-3 py-1 bg-primary-600 hover:bg-primary-700 rounded-md transition duration-150 flex items-center"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Add Question
-                </button>
-              </div>
-              
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               {examData.questions.map((question, qIndex) => (
                 <QuestionForm
                   key={qIndex}
@@ -250,29 +380,159 @@ const ExamCreator: React.FC = () => {
                   canRemove={examData.questions.length > 1}
                 />
               ))}
-            </div>
+            </Box>
+          </Box>
+        );
+      case 2:
+        return (
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              Review & Publish Assessment
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Review your assessment details before publishing. Once published, students will be able to access it according to your schedule.
+            </Typography>
             
-            <div className="flex justify-between mt-6">
-              <button
-                type="button"
-                onClick={() => navigate('/creator/exams')}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md transition duration-150"
-              >
-                Cancel
-              </button>
-              
-              <button
-                type="submit"
-                className={`px-4 py-2 rounded-md transition duration-150 ${isLoading ? 'bg-gray-600 cursor-not-allowed' : 'bg-primary-600 hover:bg-primary-700'}`}
+            <Paper sx={{ p: 3, mb: 3, borderRadius: '10px', border: '1px solid', borderColor: 'divider' }}>
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Assessment Summary
+              </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Title</Typography>
+                  <Typography variant="body1">{examData.title}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Questions</Typography>
+                  <Typography variant="body1">{examData.questions.length}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Duration</Typography>
+                  <Typography variant="body1">{examData.duration} minutes</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Start Time</Typography>
+                  <Typography variant="body1">{examData.startTime.toLocaleString()}</Typography>
+                </Box>
+              </Box>
+            </Paper>
+
+            <Button
+              variant="outlined"
+              startIcon={<PreviewIcon />}
+              onClick={() => setShowPreview(true)}
+              sx={{ borderRadius: '8px' }}
+              fullWidth
+            >
+              Preview Assessment
+            </Button>
+          </Box>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Box sx={{ mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Button
+              startIcon={<ArrowBackIcon />}
+              onClick={() => navigate('/creator/exams')}
+              sx={{ minWidth: 'auto' }}
+            >
+              Back
+            </Button>
+            <Typography variant="h4" component="h1" fontWeight="bold">
+              Create New Assessment
+            </Typography>
+          </Box>
+          
+          <AutosaveIndicator
+            isAutosaving={isAutosaving}
+            lastSaved={lastSaved}
+            isDirty={isDirty}
+          />
+        </Box>
+        
+        <Typography variant="body2" color="text.secondary">
+          Create comprehensive assessments with timed options, multiple question types, and advanced settings.
+        </Typography>
+      </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3, borderRadius: '8px' }}>
+          {error}
+        </Alert>
+      )}
+      
+      {success && (
+        <Alert severity="success" sx={{ mb: 3, borderRadius: '8px' }}>
+          {success}
+        </Alert>
+      )}
+
+      <Paper sx={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Stepper activeStep={activeStep} alternativeLabel>
+            {steps.map((label) => (
+              <Step key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+        </Box>
+
+        <Box sx={{ p: 4 }}>
+          {renderStepContent()}
+        </Box>
+
+        <Divider />
+
+        <Box sx={{ p: 3, display: 'flex', justifyContent: 'space-between' }}>
+          <Button
+            onClick={handleBack}
+            disabled={activeStep === 0}
+            sx={{ borderRadius: '8px' }}
+          >
+            Back
+          </Button>
+          
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            {activeStep === steps.length - 1 ? (
+              <Button
+                variant="contained"
+                onClick={handleSubmit}
                 disabled={isLoading}
+                startIcon={isLoading ? <CircularProgress size={16} /> : <SaveIcon />}
+                sx={{ borderRadius: '8px', minWidth: '140px' }}
               >
-                {isLoading ? 'Creating...' : 'Create Exam'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </main>
-    </div>
+                {isLoading ? 'Creating...' : 'Publish Assessment'}
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                onClick={handleNext}
+                sx={{ borderRadius: '8px' }}
+              >
+                Next
+              </Button>
+            )}
+          </Box>
+        </Box>
+      </Paper>
+
+      {/* Assessment Preview Modal */}
+      {showPreview && (
+        <AssessmentPreview
+          examData={examData}
+          onClose={() => setShowPreview(false)}
+          onEdit={() => setShowPreview(false)}
+        />
+      )}
+    </Container>
   );
 };
 

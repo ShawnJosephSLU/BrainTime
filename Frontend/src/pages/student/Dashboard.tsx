@@ -10,7 +10,6 @@ import {
   Grid, 
   Paper, 
   Button, 
-  Chip, 
   Card, 
   CardContent, 
   CardActions, 
@@ -18,10 +17,8 @@ import {
   Alert,
   AlertTitle,
   TextField,
-  InputAdornment,
-  IconButton
+  InputAdornment
 } from '@mui/material';
-import SessionInfo from '../../components/common/SessionInfo';
 import SchoolIcon from '@mui/icons-material/School';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import AlarmIcon from '@mui/icons-material/Alarm';
@@ -54,7 +51,7 @@ interface Exam {
 }
 
 const StudentDashboard = () => {
-  const { user, setAuthHeaders, refreshAuth } = useAuth();
+  const { setAuthHeaders, refreshAuth } = useAuth();
   const navigate = useNavigate();
   const [enrolledGroups, setEnrolledGroups] = useState<Group[]>([]);
   const [availableExams, setAvailableExams] = useState<Exam[]>([]);
@@ -247,7 +244,7 @@ const StudentDashboard = () => {
 
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid component="div" item xs={12} sm={6} md={3}>
+        <Grid component="div" size={{ xs: 12, sm: 6, md: 3 }}>
           <Paper 
             elevation={0} 
             sx={{ 
@@ -271,7 +268,7 @@ const StudentDashboard = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid component="div" item xs={12} sm={6} md={3}>
+        <Grid component="div" size={{ xs: 12, sm: 6, md: 3 }}>
           <Paper 
             elevation={0} 
             sx={{ 
@@ -295,7 +292,7 @@ const StudentDashboard = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid component="div" item xs={12} sm={6} md={3}>
+        <Grid component="div" size={{ xs: 12, sm: 6, md: 3 }}>
           <Paper 
             elevation={0} 
             sx={{ 
@@ -319,7 +316,7 @@ const StudentDashboard = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid component="div" item xs={12} sm={6} md={3}>
+        <Grid component="div" size={{ xs: 12, sm: 6, md: 3 }}>
           <Paper 
             elevation={0} 
             sx={{ 
@@ -347,7 +344,7 @@ const StudentDashboard = () => {
 
       <Grid container spacing={4}>
         {/* Main Content */}
-        <Grid component="div" item xs={12} md={8}>
+        <Grid component="div" size={{ xs: 12, md: 8 }}>
           {/* Active Exams Section */}
           <Box sx={{ mb: 4 }}>
             <Typography variant="h5" component="h2" fontWeight="bold" sx={{ mb: 2 }}>
@@ -372,7 +369,7 @@ const StudentDashboard = () => {
             ) : (
               <Grid container spacing={2}>
                 {activeExams.map(exam => (
-                  <Grid component="div" item xs={12} key={exam._id}>
+                  <Grid component="div" size={{ xs: 12 }} key={exam._id}>
                     <Card 
                       elevation={0} 
                       sx={{ 
@@ -472,7 +469,7 @@ const StudentDashboard = () => {
             ) : (
               <Grid container spacing={2}>
                 {upcomingExams.slice(0, 3).map(exam => (
-                  <Grid component="div" item xs={12} md={6} key={exam._id}>
+                  <Grid component="div" size={{ xs: 12, md: 6 }} key={exam._id}>
                     <Card 
                       elevation={0} 
                       sx={{ 
@@ -515,7 +512,7 @@ const StudentDashboard = () => {
         </Grid>
 
         {/* Sidebar */}
-        <Grid component="div" item xs={12} md={4}>
+        <Grid component="div" size={{ xs: 12, md: 4 }}>
           {/* Enrollment Section */}
           <Paper 
             elevation={0} 

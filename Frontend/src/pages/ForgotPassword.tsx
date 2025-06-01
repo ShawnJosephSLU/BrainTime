@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
+import { AUTH_ENDPOINTS } from '../config/api';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -19,15 +21,18 @@ const ForgotPassword = () => {
     setIsLoading(true);
     
     try {
-      // TODO: Implement actual password reset logic
-      console.log('Password reset requested for:', email);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call the actual forgot password API
+      await axios.post(AUTH_ENDPOINTS.FORGOT_PASSWORD, {
+        email: email
+      });
       
       setIsSubmitted(true);
     } catch (error) {
-      setHasError('Failed to submit request. Please try again.');
+      if (axios.isAxiosError(error) && error.response) {
+        setHasError(error.response.data.message || 'Failed to send reset email. Please try again.');
+      } else {
+        setHasError('Failed to submit request. Please try again.');
+      }
       console.error('Password reset error:', error);
     } finally {
       setIsLoading(false);

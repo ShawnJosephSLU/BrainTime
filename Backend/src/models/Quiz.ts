@@ -4,7 +4,7 @@ import { IQuiz, IQuestion } from "../types/interfaces";
 const QuestionSchema: Schema = new Schema({
   type: {
     type: String,
-    enum: ["MCQ", "shortAnswer", "longAnswer", "trueFalse"],
+    enum: ["MCQ", "multipleSelect", "shortAnswer", "longAnswer", "trueFalse", "fillInTheBlank", "matching", "ordering"],
     required: true,
   },
   text: {
@@ -27,13 +27,26 @@ const QuestionSchema: Schema = new Schema({
     type: [String],
   },
   correctAnswer: {
-    type: Schema.Types.Mixed, // Can be string or array of strings
+    type: Schema.Types.Mixed, // Can be string, array of strings, or object for complex types
     required: true,
   },
   points: {
     type: Number,
     default: 1,
   },
+  timeLimit: {
+    type: Number, // in seconds, per-question time limit
+    default: null,
+  },
+  explanation: {
+    type: String, // Optional explanation for the correct answer
+    default: '',
+  },
+  matchingPairs: [{
+    left: String,
+    right: String
+  }], // For matching questions
+  orderItems: [String], // For ordering questions
 });
 
 const QuizSchema: Schema = new Schema(

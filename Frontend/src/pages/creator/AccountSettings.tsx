@@ -222,7 +222,7 @@ const AccountSettings: React.FC = () => {
           <Box sx={{ p: 3 }}>
             {subscription ? (
               <Grid container spacing={3}>
-                <Grid item xs={12} md={7}>
+                <Grid component="div" size={{ xs: 12, md: 7 }}>
                   <Box>
                     <Typography variant="h6" component="h2" gutterBottom sx={{ fontWeight: 600 }}>
                       Current Subscription
@@ -249,41 +249,57 @@ const AccountSettings: React.FC = () => {
                         <Divider sx={{ my: 2 }} />
                         
                         <Grid container spacing={2}>
-                          <Grid item xs={6}>
-                            <Typography variant="body2" color="text.secondary">
-                              Amount
-                            </Typography>
-                            <Typography variant="body1">
-                              ${(subscription.items.data[0]?.price?.unit_amount / 100).toFixed(2)} / {subscription.items.data[0]?.price?.recurring?.interval}
-                            </Typography>
+                          <Grid component="div" size={{ xs: 6 }}>
+                            <Grid component="div" size={{ xs: 12 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Amount
+                              </Typography>
+                            </Grid>
+                            <Grid component="div" size={{ xs: 12 }}>
+                              <Typography variant="body1">
+                                ${(subscription.items.data[0]?.price?.unit_amount / 100).toFixed(2)} / {subscription.items.data[0]?.price?.recurring?.interval}
+                              </Typography>
+                            </Grid>
                           </Grid>
                           
-                          <Grid item xs={6}>
-                            <Typography variant="body2" color="text.secondary">
-                              Next billing date
-                            </Typography>
-                            <Typography variant="body1">
-                              {formatDate(subscription.current_period_end * 1000)}
-                            </Typography>
+                          <Grid component="div" size={{ xs: 6 }}>
+                            <Grid component="div" size={{ xs: 12 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Next billing date
+                              </Typography>
+                            </Grid>
+                            <Grid component="div" size={{ xs: 12 }}>
+                              <Typography variant="body1">
+                                {formatDate(subscription.current_period_end * 1000)}
+                              </Typography>
+                            </Grid>
                           </Grid>
                           
-                          <Grid item xs={6}>
-                            <Typography variant="body2" color="text.secondary">
-                              Subscription started
-                            </Typography>
-                            <Typography variant="body1">
-                              {formatDate(subscription.start_date * 1000)}
-                            </Typography>
+                          <Grid component="div" size={{ xs: 6 }}>
+                            <Grid component="div" size={{ xs: 12 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Subscription started
+                              </Typography>
+                            </Grid>
+                            <Grid component="div" size={{ xs: 12 }}>
+                              <Typography variant="body1">
+                                {formatDate(subscription.start_date * 1000)}
+                              </Typography>
+                            </Grid>
                           </Grid>
                           
-                          <Grid item xs={6}>
-                            <Typography variant="body2" color="text.secondary">
-                              Payment method
-                            </Typography>
-                            <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center' }}>
-                              <CreditCardIcon fontSize="small" sx={{ mr: 1 }} />
-                              •••• {subscription.default_payment_method?.card?.last4 || '****'}
-                            </Typography>
+                          <Grid component="div" size={{ xs: 6 }}>
+                            <Grid component="div" size={{ xs: 12 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Payment method
+                              </Typography>
+                            </Grid>
+                            <Grid component="div" size={{ xs: 12 }}>
+                              <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center' }}>
+                                <CreditCardIcon fontSize="small" sx={{ mr: 1 }} />
+                                •••• {subscription.default_payment_method?.card?.last4 || '****'}
+                              </Typography>
+                            </Grid>
                           </Grid>
                         </Grid>
                       </CardContent>
@@ -301,7 +317,7 @@ const AccountSettings: React.FC = () => {
                   </Box>
                 </Grid>
                 
-                <Grid item xs={12} md={5}>
+                <Grid component="div" size={{ xs: 12, md: 5 }}>
                   <Box>
                     <Typography variant="h6" component="h2" gutterBottom sx={{ fontWeight: 600 }}>
                       Recent Invoices
@@ -380,40 +396,56 @@ const AccountSettings: React.FC = () => {
             <Card elevation={0} variant="outlined" sx={{ mb: 3 }}>
               <CardContent>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" color="text.secondary">
-                      Name
-                    </Typography>
-                    <Typography variant="body1">
-                      {user?.name || 'N/A'}
-                    </Typography>
+                  <Grid component="div" size={{ xs: 12, sm: 6 }}>
+                    <Grid component="div" size={{ xs: 12 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Name
+                      </Typography>
+                    </Grid>
+                    <Grid component="div" size={{ xs: 12 }}>
+                      <Typography variant="body1">
+                        {user?.name || 'N/A'}
+                      </Typography>
+                    </Grid>
                   </Grid>
                   
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" color="text.secondary">
-                      Email
-                    </Typography>
-                    <Typography variant="body1">
-                      {user?.email || 'N/A'}
-                    </Typography>
+                  <Grid component="div" size={{ xs: 12, sm: 6 }}>
+                    <Grid component="div" size={{ xs: 12 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Email
+                      </Typography>
+                    </Grid>
+                    <Grid component="div" size={{ xs: 12 }}>
+                      <Typography variant="body1">
+                        {user?.email || 'N/A'}
+                      </Typography>
+                    </Grid>
                   </Grid>
                   
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" color="text.secondary">
-                      Role
-                    </Typography>
-                    <Typography variant="body1" sx={{ textTransform: 'capitalize' }}>
-                      {user?.role || 'N/A'}
-                    </Typography>
+                  <Grid component="div" size={{ xs: 12, sm: 6 }}>
+                    <Grid component="div" size={{ xs: 12 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Role
+                      </Typography>
+                    </Grid>
+                    <Grid component="div" size={{ xs: 12 }}>
+                      <Typography variant="body1" sx={{ textTransform: 'capitalize' }}>
+                        {user?.role || 'N/A'}
+                      </Typography>
+                    </Grid>
                   </Grid>
                   
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" color="text.secondary">
-                      Member Since
-                    </Typography>
-                    <Typography variant="body1">
-                      {user?.createdAt ? formatDate(user.createdAt) : 'N/A'}
-                    </Typography>
+                  <Grid component="div" size={{ xs: 12, sm: 6 }}>
+                    <Grid component="div" size={{ xs: 12 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Member Since
+                      </Typography>
+                    </Grid>
+                    <Grid component="div" size={{ xs: 12 }}>
+                      <Typography variant="body1">
+                        {user?.createdAt ? formatDate(user.createdAt) : 'N/A'}
+                      </Typography>
+                    </Grid>
                   </Grid>
                 </Grid>
               </CardContent>
