@@ -57,6 +57,16 @@ const UserSchema: Schema = new Schema(
       trim: true,
       required: false,
     },
+    firstName: {
+      type: String,
+      trim: true,
+      required: false,
+    },
+    lastName: {
+      type: String,
+      trim: true,
+      required: false,
+    },
     username: {
       type: String,
       trim: true,
@@ -75,6 +85,10 @@ const UserSchema: Schema = new Schema(
     suspended: {
       type: Boolean,
       default: false,
+    },
+    lastLogin: {
+      type: Date,
+      default: null,
     },
   },
   {

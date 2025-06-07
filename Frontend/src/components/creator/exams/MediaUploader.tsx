@@ -1,7 +1,18 @@
 import React, { useState } from 'react';
-import { Box, Button, Typography, Stack, CircularProgress } from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import axios from 'axios';
+import {
+  Box,
+  Button,
+  Chip,
+  Alert,
+  CircularProgress,
+  Paper
+} from '@mui/material';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import ImageIcon from '@mui/icons-material/Image';
+import AudiotrackIcon from '@mui/icons-material/Audiotrack';
+import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
+import GifBoxIcon from '@mui/icons-material/GifBox';
 
 interface MediaUploaderProps {
   questionIndex: number;
@@ -19,6 +30,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({ questionIndex, onMediaUpl
     if (e.target.files && e.target.files.length > 0) {
       setSelectedFile(e.target.files[0]);
       setError(null);
+      setSuccess(null);
     }
   };
 
@@ -47,6 +59,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({ questionIndex, onMediaUpl
       onMediaUploaded(questionIndex, mediaType, response.data.url);
       setSelectedFile(null);
       setSuccess(`${mediaType} uploaded successfully`);
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error('Error uploading media:', err);
       setError('Failed to upload media');
@@ -57,95 +70,114 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({ questionIndex, onMediaUpl
   };
 
   return (
-    <Box className="mb-4 p-4 border border-gray-700 rounded-lg">
-      <Typography variant="subtitle1" className="text-white mb-2">
-        Media Attachments
-      </Typography>
-      
+    <Paper 
+      variant="outlined" 
+      sx={{ 
+        p: 2, 
+        borderRadius: '8px',
+        backgroundColor: 'grey.50'
+      }}
+    >
       {error && (
-        <Typography variant="body2" className="text-red-500 mb-2">
+        <Alert severity="error" sx={{ mb: 2 }}>
           {error}
-        </Typography>
+        </Alert>
       )}
       
       {success && (
-        <Typography variant="body2" className="text-green-500 mb-2">
+        <Alert severity="success" sx={{ mb: 2 }}>
           {success}
-        </Typography>
+        </Alert>
       )}
       
-      <Stack direction="row" spacing={2} className="mb-3 items-center">
-        <input
-          accept="image/*,audio/*,video/*"
-          className="hidden"
-          id={`file-upload-${questionIndex}`}
-          type="file"
-          onChange={handleFileChange}
-        />
-        <label htmlFor={`file-upload-${questionIndex}`}>
-          <Button 
-            variant="contained" 
-            component="span"
-            startIcon={<CloudUploadIcon />}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            Select File
-          </Button>
-        </label>
+      <Box sx={{ mb: 2 }}>
+        <Button
+          component="label"
+          variant="outlined"
+          startIcon={<CloudUploadIcon />}
+          sx={{ borderRadius: '8px' }}
+        >
+          Select File
+          <input
+            type="file"
+            accept="image/*,audio/*,video/*"
+            hidden
+            onChange={handleFileChange}
+          />
+        </Button>
         
         {selectedFile && (
-          <Typography variant="body2" className="text-gray-300">
-            {selectedFile.name}
-          </Typography>
+          <Chip 
+            label={selectedFile.name} 
+            sx={{ ml: 2 }}
+            color="primary"
+            variant="outlined"
+          />
         )}
-      </Stack>
+      </Box>
       
-      <Stack direction="row" spacing={2} className="flex-wrap">
-        <Button 
-          variant="outlined"
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+        <Button
+          variant="contained"
+          size="small"
           onClick={() => uploadMedia('image')}
           disabled={!selectedFile || isUploading}
-          className="border-gray-500 text-gray-300"
+          startIcon={
+            isUploading && uploadingMediaType === 'image' ? 
+            <CircularProgress size={16} color="inherit" /> : 
+            <ImageIcon />
+          }
+          sx={{ borderRadius: '6px' }}
         >
-          {isUploading && uploadingMediaType === 'image' ? (
-            <><CircularProgress size={16} className="mr-2" /> Uploading...</>
-          ) : 'Upload Image'}
+          {isUploading && uploadingMediaType === 'image' ? 'Uploading...' : 'Upload Image'}
         </Button>
         
-        <Button 
-          variant="outlined"
+        <Button
+          variant="contained"
+          size="small"
           onClick={() => uploadMedia('audio')}
           disabled={!selectedFile || isUploading}
-          className="border-gray-500 text-gray-300"
+          startIcon={
+            isUploading && uploadingMediaType === 'audio' ? 
+            <CircularProgress size={16} color="inherit" /> : 
+            <AudiotrackIcon />
+          }
+          sx={{ borderRadius: '6px' }}
         >
-          {isUploading && uploadingMediaType === 'audio' ? (
-            <><CircularProgress size={16} className="mr-2" /> Uploading...</>
-          ) : 'Upload Audio'}
+          {isUploading && uploadingMediaType === 'audio' ? 'Uploading...' : 'Upload Audio'}
         </Button>
         
-        <Button 
-          variant="outlined"
+        <Button
+          variant="contained"
+          size="small"
           onClick={() => uploadMedia('video')}
           disabled={!selectedFile || isUploading}
-          className="border-gray-500 text-gray-300"
+          startIcon={
+            isUploading && uploadingMediaType === 'video' ? 
+            <CircularProgress size={16} color="inherit" /> : 
+            <VideoLibraryIcon />
+          }
+          sx={{ borderRadius: '6px' }}
         >
-          {isUploading && uploadingMediaType === 'video' ? (
-            <><CircularProgress size={16} className="mr-2" /> Uploading...</>
-          ) : 'Upload Video'}
+          {isUploading && uploadingMediaType === 'video' ? 'Uploading...' : 'Upload Video'}
         </Button>
         
-        <Button 
-          variant="outlined"
+        <Button
+          variant="contained"
+          size="small"
           onClick={() => uploadMedia('gif')}
           disabled={!selectedFile || isUploading}
-          className="border-gray-500 text-gray-300"
+          startIcon={
+            isUploading && uploadingMediaType === 'gif' ? 
+            <CircularProgress size={16} color="inherit" /> : 
+            <GifBoxIcon />
+          }
+          sx={{ borderRadius: '6px' }}
         >
-          {isUploading && uploadingMediaType === 'gif' ? (
-            <><CircularProgress size={16} className="mr-2" /> Uploading...</>
-          ) : 'Upload GIF'}
+          {isUploading && uploadingMediaType === 'gif' ? 'Uploading...' : 'Upload GIF'}
         </Button>
-      </Stack>
-    </Box>
+      </Box>
+    </Paper>
   );
 };
 

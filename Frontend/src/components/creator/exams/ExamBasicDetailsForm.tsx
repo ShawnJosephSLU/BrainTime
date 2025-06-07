@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   TextField,
@@ -11,12 +11,29 @@ import {
   CardContent,
   RadioGroup,
   Radio,
-  Chip
+  Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  OutlinedInput,
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import axios from 'axios';
+import { API_URL } from '../../../config/api';
 import type { IExamData } from './types';
+
+interface Group {
+  _id: string;
+  name: string;
+  description: string;
+  enrollmentCode: string;
+  students: any[];
+}
 
 interface ExamBasicDetailsFormProps {
   examData: IExamData;
@@ -24,6 +41,32 @@ interface ExamBasicDetailsFormProps {
 }
 
 const ExamBasicDetailsForm: React.FC<ExamBasicDetailsFormProps> = ({ examData, onChange }) => {
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [isLoadingGroups, setIsLoadingGroups] = useState<boolean>(true);
+  const [groupsError, setGroupsError] = useState<string | null>(null);
+
+  // Load creator's groups on component mount
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        setIsLoadingGroups(true);
+        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        const response = await axios.get(`${API_URL}/api/groups/creator`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setGroups(response.data);
+        setGroupsError(null);
+      } catch (error: any) {
+        console.error('Error fetching groups:', error);
+        setGroupsError(error.response?.data?.message || 'Failed to load groups');
+      } finally {
+        setIsLoadingGroups(false);
+      }
+    };
+
+    fetchGroups();
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
@@ -43,6 +86,11 @@ const ExamBasicDetailsForm: React.FC<ExamBasicDetailsFormProps> = ({ examData, o
     if (value) {
       onChange({ [name]: value });
     }
+  };
+
+  const handleGroupSelectionChange = (event: any) => {
+    const value = event.target.value;
+    onChange({ selectedGroups: typeof value === 'string' ? value.split(',') : value });
   };
 
   return (
@@ -142,6 +190,78 @@ const ExamBasicDetailsForm: React.FC<ExamBasicDetailsFormProps> = ({ examData, o
                     />
                   </Box>
                 </RadioGroup>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Group Assignment */}
+          <Grid component="div" size={{ xs: 12 }}>
+            <Card sx={{ borderRadius: '8px', border: '1px solid', borderColor: 'divider' }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Assign to Groups
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Select which groups should have access to this assessment
+                </Typography>
+
+                {groupsError && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {groupsError}
+                  </Alert>
+                )}
+
+                {isLoadingGroups ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <CircularProgress size={20} />
+                    <Typography variant="body2" color="text.secondary">
+                      Loading your groups...
+                    </Typography>
+                  </Box>
+                ) : groups.length === 0 ? (
+                  <Alert severity="info">
+                    No groups found. Create groups first to assign assessments to students.
+                  </Alert>
+                ) : (
+                  <FormControl fullWidth>
+                    <InputLabel>Select Groups</InputLabel>
+                    <Select
+                      multiple
+                      value={examData.selectedGroups}
+                      onChange={handleGroupSelectionChange}
+                      input={<OutlinedInput label="Select Groups" />}
+                      renderValue={(selected) => (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {(selected as string[]).map((groupId) => {
+                            const group = groups.find(g => g._id === groupId);
+                            return (
+                              <Chip
+                                key={groupId}
+                                label={group?.name || 'Unknown'}
+                                size="small"
+                                color="primary"
+                                variant="outlined"
+                              />
+                            );
+                          })}
+                        </Box>
+                      )}
+                    >
+                      {groups.map((group) => (
+                        <MenuItem key={group._id} value={group._id}>
+                          <Box sx={{ width: '100%' }}>
+                            <Typography variant="body2" fontWeight="medium">
+                              {group.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {group.students.length} students • Code: {group.enrollmentCode}
+                            </Typography>
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
               </CardContent>
             </Card>
           </Grid>

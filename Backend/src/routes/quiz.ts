@@ -16,7 +16,10 @@ import {
   submitExam,
   getQuizSubmissions,
   getSubmissionDetails,
-  gradeSubmission
+  gradeSubmission,
+  getPublicQuizzes,
+  getStudentResults,
+  getMyResults
 } from '../controllers/quizController';
 
 const router = express.Router();
@@ -39,6 +42,10 @@ const upload = multer({
   } 
 });
 
+// Public routes - accessible to all authenticated users (must come before parameterized routes)
+router.get('/public', authenticateToken, wrapAuthHandler(getPublicQuizzes));
+router.get('/my-results', authenticateToken, wrapAuthHandler(getMyResults));
+
 // Creator routes - require creator or admin role
 router.post('/create', authenticateToken, roleMiddleware(['creator', 'admin']), wrapAuthHandler(createQuiz));
 router.post(
@@ -49,24 +56,8 @@ router.post(
   wrapAuthHandler(uploadQuestionMedia)
 );
 router.get('/creator', authenticateToken, roleMiddleware(['creator', 'admin']), wrapAuthHandler(getCreatorQuizzes));
-router.get('/:quizId', authenticateToken, roleMiddleware(['creator', 'admin']), wrapAuthHandler(getQuizDetails));
-router.put('/:quizId', authenticateToken, roleMiddleware(['creator', 'admin']), wrapAuthHandler(updateQuiz));
-router.delete('/:quizId', authenticateToken, roleMiddleware(['creator', 'admin']), wrapAuthHandler(deleteQuiz));
-router.patch(
-  '/:quizId/toggle-live',
-  authenticateToken,
-  roleMiddleware(['creator', 'admin']),
-  wrapAuthHandler(toggleQuizLiveStatus)
-);
 
 // Submission and grading routes
-router.get(
-  '/:quizId/submissions',
-  authenticateToken,
-  roleMiddleware(['creator', 'admin']),
-  wrapAuthHandler(getQuizSubmissions)
-);
-
 router.get(
   '/submissions/:submissionId',
   authenticateToken,
@@ -81,8 +72,25 @@ router.post(
   wrapAuthHandler(gradeSubmission)
 );
 
-// Public routes
+// Parameterized routes (must come after specific routes)
 router.get('/:quizId/availability', wrapAuthHandler(checkQuizAvailability));
+router.get('/:quizId/results', authenticateToken, wrapAuthHandler(getStudentResults));
+router.get('/:quizId', authenticateToken, roleMiddleware(['creator', 'admin']), wrapAuthHandler(getQuizDetails));
+router.put('/:quizId', authenticateToken, roleMiddleware(['creator', 'admin']), wrapAuthHandler(updateQuiz));
+router.delete('/:quizId', authenticateToken, roleMiddleware(['creator', 'admin']), wrapAuthHandler(deleteQuiz));
+router.patch(
+  '/:quizId/toggle-live',
+  authenticateToken,
+  roleMiddleware(['creator', 'admin']),
+  wrapAuthHandler(toggleQuizLiveStatus)
+);
+
+router.get(
+  '/:quizId/submissions',
+  authenticateToken,
+  roleMiddleware(['creator', 'admin']),
+  wrapAuthHandler(getQuizSubmissions)
+);
 
 // Student routes - require student role
 router.post(

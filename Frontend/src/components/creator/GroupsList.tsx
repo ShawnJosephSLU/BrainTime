@@ -20,6 +20,11 @@ import {
   Chip,
   Alert,
   CircularProgress,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -27,6 +32,8 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import BookIcon from '@mui/icons-material/Book';
 import PersonIcon from '@mui/icons-material/Person';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import PublicIcon from '@mui/icons-material/Public';
+import LockIcon from '@mui/icons-material/Lock';
 
 interface IGroup {
   _id: string;
@@ -36,6 +43,8 @@ interface IGroup {
   enrollmentCode: string;
   students: any[];
   exams: any[];
+  isPublic: boolean;
+  password?: string;
   createdAt: string;
 }
 
@@ -58,6 +67,8 @@ const GroupsList: React.FC = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState<boolean>(false);
   const [newGroupName, setNewGroupName] = useState<string>('');
   const [newGroupDescription, setNewGroupDescription] = useState<string>('');
+  const [newGroupIsPublic, setNewGroupIsPublic] = useState<boolean>(false);
+  const [newGroupPassword, setNewGroupPassword] = useState<string>('');
   const [isCreating, setIsCreating] = useState<boolean>(false);
   
   // Assign exam dialog
@@ -127,6 +138,8 @@ const GroupsList: React.FC = () => {
   const handleCreateGroup = () => {
     setNewGroupName('');
     setNewGroupDescription('');
+    setNewGroupIsPublic(false);
+    setNewGroupPassword('');
     setCreateDialogOpen(true);
   };
 
@@ -146,7 +159,9 @@ const GroupsList: React.FC = () => {
       
       await axios.post(`${API_URL}/api/groups/create`, {
         name: newGroupName.trim(),
-        description: newGroupDescription.trim()
+        description: newGroupDescription.trim(),
+        isPublic: newGroupIsPublic,
+        password: newGroupIsPublic && newGroupPassword.trim() ? newGroupPassword.trim() : null
       });
       
       setSuccess('Group created successfully');
@@ -177,8 +192,11 @@ const GroupsList: React.FC = () => {
     setIsAssigning(true);
     
     try {
+      // Set auth headers before making the request
+      setAuthHeaders();
+      
       await axios.post(
-        `${API_URL}/groups/${selectedGroup._id}/assign-exam/${selectedExam}`,
+        `${API_URL}/api/groups/${selectedGroup._id}/assign-exam/${selectedExam}`,
         {},
         {
           headers: {
@@ -299,9 +317,18 @@ const GroupsList: React.FC = () => {
             <Box sx={{ width: { xs: '100%', md: 'calc(50% - 12px)', lg: 'calc(33.33% - 16px)' } }} key={group._id}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    {group.name}
-                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                    <Typography variant="h6" gutterBottom sx={{ mb: 0 }}>
+                      {group.name}
+                    </Typography>
+                    <Chip
+                      icon={group.isPublic ? <PublicIcon /> : <LockIcon />}
+                      label={group.isPublic ? 'Public' : 'Private'}
+                      color={group.isPublic ? 'success' : 'default'}
+                      size="small"
+                      variant="outlined"
+                    />
+                  </Box>
                   
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                     {group.description || 'No description'}
@@ -392,7 +419,71 @@ const GroupsList: React.FC = () => {
             rows={3}
             value={newGroupDescription}
             onChange={(e) => setNewGroupDescription(e.target.value)}
+            sx={{ mb: 3 }}
           />
+
+          {/* Group Visibility Setting */}
+          <Paper sx={{ p: 2, mb: 2, border: '1px solid', borderColor: 'divider' }}>
+            <FormControl component="fieldset">
+              <FormLabel component="legend" sx={{ mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="subtitle2" fontWeight="bold">
+                    Group Visibility
+                  </Typography>
+                  <Chip 
+                    label={newGroupIsPublic ? 'Public' : 'Private'} 
+                    color={newGroupIsPublic ? 'success' : 'default'}
+                    size="small"
+                  />
+                </Box>
+              </FormLabel>
+              
+              <RadioGroup
+                value={newGroupIsPublic ? 'public' : 'private'}
+                onChange={(e) => setNewGroupIsPublic(e.target.value === 'public')}
+              >
+                <FormControlLabel
+                  value="private"
+                  control={<Radio />}
+                  label={
+                    <Box>
+                      <Typography variant="body2" fontWeight="medium">Private Group</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Only visible to you. Students need enrollment code to join.
+                      </Typography>
+                    </Box>
+                  }
+                />
+                <FormControlLabel
+                  value="public"
+                  control={<Radio />}
+                  label={
+                    <Box>
+                      <Typography variant="body2" fontWeight="medium">Public Group</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Discoverable by students. Can be protected with a password.
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </RadioGroup>
+            </FormControl>
+          </Paper>
+
+          {/* Password Field for Public Groups */}
+          {newGroupIsPublic && (
+            <TextField
+              margin="dense"
+              label="Group Password (Optional)"
+              fullWidth
+              variant="outlined"
+              type="password"
+              value={newGroupPassword}
+              onChange={(e) => setNewGroupPassword(e.target.value)}
+              placeholder="Leave empty for no password protection"
+              helperText="Students will need this password to join the public group"
+            />
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={closeCreateDialog} disabled={isCreating}>

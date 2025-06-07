@@ -254,3 +254,128 @@ export const sendEtherealVerificationEmail = async (
     return { success: false };
   }
 };
+
+/**
+ * Send exam completion notification to the quiz host
+ * @param hostEmail Host/creator email address
+ * @param studentName Student name who completed the exam
+ * @param studentEmail Student email address
+ * @param quizTitle Quiz title
+ * @param completedAt Time when exam was completed
+ * @param frontendUrl Frontend URL for viewing submissions
+ * @param quizId Quiz ID for direct link
+ */
+export const sendExamCompletionNotification = async (
+  hostEmail: string,
+  studentName: string,
+  studentEmail: string,
+  quizTitle: string,
+  completedAt: Date,
+  frontendUrl: string,
+  quizId: string
+): Promise<boolean> => {
+  try {
+    const submissionsLink = `${frontendUrl}/creator/quiz/${quizId}/submissions`;
+    const formattedDate = completedAt.toLocaleString();
+    
+    const mailOptions = {
+      from: `"BrainTime" <${process.env.EMAIL_USER}>`,
+      to: hostEmail,
+      subject: `New Exam Submission: ${quizTitle}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #4a4a4a;">New Exam Submission Received</h2>
+          <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>Quiz:</strong> ${quizTitle}</p>
+            <p><strong>Student:</strong> ${studentName} (${studentEmail})</p>
+            <p><strong>Completed at:</strong> ${formattedDate}</p>
+          </div>
+          <p>A student has just completed your exam. You can view their submission and grade it using the link below:</p>
+          <div style="margin: 30px 0;">
+            <a href="${submissionsLink}" 
+               style="background-color: #4CAF50; color: white; padding: 12px 20px; 
+                      text-decoration: none; border-radius: 4px; font-weight: bold;">
+              View Submissions
+            </a>
+          </div>
+          <p>If the button above doesn't work, you can copy and paste this link into your browser:</p>
+          <p><a href="${submissionsLink}">${submissionsLink}</a></p>
+          <hr style="border: 1px solid #eee; margin: 20px 0;">
+          <p style="color: #777; font-size: 12px;">© ${new Date().getFullYear()} BrainTime. All rights reserved.</p>
+        </div>
+      `,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Exam completion notification sent: %s', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Error sending exam completion notification:', error);
+    return false;
+  }
+};
+
+/**
+ * Send exam results to the student
+ * @param studentEmail Student email address
+ * @param studentName Student name
+ * @param quizTitle Quiz title
+ * @param score Score achieved
+ * @param maxScore Maximum possible score
+ * @param feedback Optional feedback from instructor
+ * @param frontendUrl Frontend URL
+ * @param quizId Quiz ID for reference
+ */
+export const sendExamResults = async (
+  studentEmail: string,
+  studentName: string,
+  quizTitle: string,
+  score: number,
+  maxScore: number,
+  feedback?: string,
+  frontendUrl?: string,
+  quizId?: string
+): Promise<boolean> => {
+  try {
+    const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+    const resultLink = frontendUrl && quizId ? `${frontendUrl}/student/results/${quizId}` : null;
+    
+    const mailOptions = {
+      from: `"BrainTime" <${process.env.EMAIL_USER}>`,
+      to: studentEmail,
+      subject: `Your Results: ${quizTitle}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #4a4a4a;">Your Exam Results</h2>
+          <div style="background-color: #f0f8ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4CAF50;">
+            <h3 style="margin-top: 0; color: #2c5aa0;">${quizTitle}</h3>
+            <p><strong>Student:</strong> ${studentName}</p>
+            <p><strong>Score:</strong> ${score} / ${maxScore} (${percentage}%)</p>
+            ${feedback ? `<p><strong>Instructor Feedback:</strong></p><p style="background-color: white; padding: 10px; border-radius: 4px; font-style: italic;">${feedback}</p>` : ''}
+          </div>
+          ${resultLink ? `
+            <div style="margin: 30px 0;">
+              <a href="${resultLink}" 
+                 style="background-color: #2196F3; color: white; padding: 12px 20px; 
+                        text-decoration: none; border-radius: 4px; font-weight: bold;">
+                View Detailed Results
+              </a>
+            </div>
+            <p>If the button above doesn't work, you can copy and paste this link into your browser:</p>
+            <p><a href="${resultLink}">${resultLink}</a></p>
+          ` : ''}
+          <p>Thank you for taking the exam. If you have any questions about your results, please contact your instructor.</p>
+          <hr style="border: 1px solid #eee; margin: 20px 0;">
+          <p style="color: #777; font-size: 12px;">© ${new Date().getFullYear()} BrainTime. All rights reserved.</p>
+        </div>
+      `,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Exam results sent: %s', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Error sending exam results:', error);
+    return false;
+  }
+};

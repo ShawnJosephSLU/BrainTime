@@ -3,12 +3,34 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { AUTH_ENDPOINTS } from '../config/api';
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Card,
+  CardContent,
+  Container,
+  FormControlLabel,
+  Checkbox,
+  Divider,
+  Stack,
+  Alert,
+  CircularProgress,
+  Paper,
+
+  Fade,
+  Grow
+} from '@mui/material';
 import SchoolIcon from '@mui/icons-material/School';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import InsightsIcon from '@mui/icons-material/Insights';
 import GroupsIcon from '@mui/icons-material/Groups';
-import Alert from '@mui/material/Alert';
-import CircularProgress from '@mui/material/CircularProgress';
+import LoginIcon from '@mui/icons-material/Login';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
 
 interface SignInFormData {
   email: string;
@@ -16,309 +38,350 @@ interface SignInFormData {
   rememberMe: boolean;
 }
 
+const FeatureCard: React.FC<{ 
+  icon: React.ReactNode; 
+  title: string; 
+  description: string;
+  delay: number;
+}> = ({ icon, title, description, delay }) => (
+  <Grow in={true} timeout={800} style={{ transitionDelay: `${delay}ms` }}>
+    <Paper 
+      elevation={0}
+      sx={{ 
+        p: 3, 
+        textAlign: 'center',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 3,
+        transition: 'all 0.2s ease-in-out',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: 3,
+          borderColor: 'primary.main'
+        }
+      }}
+    >
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        mb: 2,
+        p: 2,
+        borderRadius: 2,
+        bgcolor: 'primary.50',
+        color: 'primary.600',
+        width: 'fit-content',
+        mx: 'auto'
+      }}>
+        {icon}
+      </Box>
+      <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
+        {title}
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        {description}
+      </Typography>
+    </Paper>
+  </Grow>
+);
+
 const SignIn = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState<SignInFormData>({
     email: '',
     password: '',
-    rememberMe: localStorage.getItem('rememberMe') === 'true'
+    rememberMe: false
   });
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [hasError, setHasError] = useState<string | null>(null);
-  const [needsVerification, setNeedsVerification] = useState<boolean>(false);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { login, setAuthHeaders } = useAuth();
-  
-  // Get returnUrl from query params
-  const searchParams = new URLSearchParams(location.search);
-  const returnUrl = searchParams.get('returnUrl') || '';
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       [name]: type === 'checkbox' ? checked : value
-    });
-    
-    // Store rememberMe preference
-    if (name === 'rememberMe') {
-      localStorage.setItem('rememberMe', String(checked));
-    }
+    }));
+  };
+
+  const handleTogglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.email || !formData.password) {
-      setHasError('Email and password are required');
-      return;
-    }
-    
-    setHasError(null);
-    setNeedsVerification(false);
-    setIsLoading(true);
-    
+    setLoading(true);
+    setError(null);
+
     try {
       const response = await axios.post(AUTH_ENDPOINTS.LOGIN, {
         loginIdentifier: formData.email,
         password: formData.password
       });
-      
-      // Get token and user info
-      const { accessToken, user } = response.data;
-      
-      // Use the login function from AuthContext
+
+      const { user, accessToken } = response.data;
       login(accessToken, user);
-      
-      // Set authorization headers for future requests
-      setAuthHeaders();
-      
-      // Redirect based on returnUrl or user role
+
+      // Redirect to the appropriate dashboard or return URL
+      const returnUrl = new URLSearchParams(location.search).get('returnUrl');
       if (returnUrl) {
         navigate(returnUrl);
+      } else if (user.role === 'creator') {
+        navigate('/creator/dashboard');
+      } else if (user.role === 'student') {
+        navigate('/student/dashboard');
+      } else if (user.role === 'admin') {
+        navigate('/admin/dashboard');
       } else {
-        // Default redirects based on user role
-        if (user.role === 'student') {
-          navigate('/student/dashboard');
-        } else if (user.role === 'creator') {
-          navigate('/creator/dashboard');
-        } else if (user.role === 'admin') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/');
-        }
+        navigate('/');
       }
-      
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        // Check if the error is due to email not being verified
-        if (error.response.data.needsVerification) {
-          setNeedsVerification(true);
-        } else {
-          setHasError(error.response.data.message || 'Invalid email or password');
-        }
-      } else {
-        setHasError('Login failed. Please try again later.');
-      }
-      console.error('Login error:', error);
+    } catch (err: any) {
+      console.error('Sign in error:', err);
+      setError(err.response?.data?.message || 'Failed to sign in. Please try again.');
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResendVerification = async () => {
-    if (!formData.email) {
-      setHasError('Email is required for resending verification');
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    try {
-      await axios.post(AUTH_ENDPOINTS.RESEND_VERIFICATION, {
-        email: formData.email
-      });
-      
-      // Show success message
-      setHasError(null);
-      setNeedsVerification(true);
-      
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        setHasError(error.response.data.message || 'Failed to resend verification email.');
-      } else {
-        setHasError('Failed to resend verification email. Please try again later.');
-      }
-      console.error('Resend verification error:', error);
-    } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row w-full bg-white">
-      {/* Left section with illustration */}
-      <div className="hidden md:flex md:w-2/5 bg-gradient-to-br from-blue-500 to-blue-700 p-12 justify-center items-center">
-        <div className="max-w-md text-white">
-          <div className="flex items-center mb-8">
-            <SchoolIcon sx={{ fontSize: 40, marginRight: 2 }} />
-            <h1 className="text-4xl font-bold">BrainTime</h1>
-          </div>
-          <h2 className="text-2xl font-semibold mb-6">Welcome to the leading online assessment platform</h2>
-          <p className="text-lg opacity-90 mb-10">
-            Create secure, timed assessments for your students with comprehensive analytics and management tools.
-          </p>
-          
-          <div className="space-y-5">
-            <div className="flex items-center">
-              <CheckCircleOutlineIcon sx={{ marginRight: 2 }} />
-              <span className="text-lg">Create secure, timed assessments</span>
-            </div>
-            
-            <div className="flex items-center">
-              <InsightsIcon sx={{ marginRight: 2 }} />
-              <span className="text-lg">Advanced analytics and insights</span>
-            </div>
-            
-            <div className="flex items-center">
-              <GroupsIcon sx={{ marginRight: 2 }} />
-              <span className="text-lg">Comprehensive student management</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Right section with form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-white">
-        <div className="w-full max-w-md">
-          {/* Mobile logo - shown only on mobile */}
-          <div className="md:hidden flex flex-col items-center mb-10">
-            <div className="flex items-center mb-4">
-              <SchoolIcon sx={{ fontSize: 36, marginRight: 1, color: 'var(--primary-color)' }} />
-              <h1 className="text-3xl font-bold text-blue-600">BrainTime</h1>
-            </div>
-            <p className="text-gray-600 text-center">
-              Sign in to your account to create and manage assessments
-            </p>
-          </div>
-          
-          <div className="hidden md:block mb-10">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Sign in to your account</h2>
-            <p className="text-gray-600">
-              {returnUrl 
-                ? "Sign in to continue to your previous session" 
-                : "Access your BrainTime dashboard and tools"}
-            </p>
-          </div>
-          
-          {/* Verification message */}
-          {needsVerification && (
-            <Alert 
-              severity="warning" 
-              sx={{ 
-                marginBottom: 3,
-                backgroundColor: '#fff8e1',
-                color: '#b45309',
-                border: '1px solid #fef3c7',
-                '& .MuiAlert-icon': {
-                  color: '#d97706'
-                }
-              }}
-            >
-              <div className="mb-2 font-semibold">Email Verification Required</div>
-              <p className="mb-3">Your email address has not been verified. Please check your inbox for the verification link.</p>
-              <button
-                onClick={handleResendVerification}
-                disabled={isLoading}
-                className="btn btn-outline text-sm py-1 px-3 mt-1 w-auto"
-                style={{ display: 'flex', alignItems: 'center' }}
+    <Box sx={{ 
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      py: 4
+    }}>
+      <Container maxWidth="lg">
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', lg: 'row' }, 
+          gap: 4, 
+          alignItems: 'center' 
+        }}>
+          {/* Left Side - Branding and Features */}
+          <Box sx={{ flex: 1, width: '100%' }}>
+            <Fade in={true} timeout={800}>
+              <Box sx={{ color: 'white', mb: 4 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                  <SchoolIcon sx={{ fontSize: 48, mr: 2 }} />
+                  <Typography variant="h2" component="h1" sx={{ fontWeight: 800 }}>
+                    BrainTime
+                  </Typography>
+                </Box>
+                
+                <Typography variant="h4" sx={{ mb: 2, fontWeight: 300 }}>
+                  Welcome to the Future of Online Assessments
+                </Typography>
+                
+                <Typography variant="body1" sx={{ mb: 4, opacity: 0.9, maxWidth: 500 }}>
+                  Create engaging exams, track student progress, and manage your educational content 
+                  with our comprehensive assessment platform.
+                </Typography>
+              </Box>
+            </Fade>
+
+            <Box sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, 
+              gap: 3 
+            }}>
+              <FeatureCard 
+                icon={<CheckCircleOutlineIcon fontSize="large" />}
+                title="Smart Assessments"
+                description="Create intelligent exams with multiple question types and automated grading"
+                delay={200}
+              />
+              <FeatureCard 
+                icon={<InsightsIcon fontSize="large" />}
+                title="Analytics"
+                description="Get detailed insights into student performance and learning patterns"
+                delay={400}
+              />
+              <FeatureCard 
+                icon={<GroupsIcon fontSize="large" />}
+                title="Group Management"
+                description="Organize students into groups and manage access permissions easily"
+                delay={600}
+              />
+            </Box>
+          </Box>
+
+          {/* Right Side - Sign In Form */}
+          <Box sx={{ flex: 1, width: '100%', maxWidth: { lg: '50%' } }}>
+            <Fade in={true} timeout={1000} style={{ transitionDelay: '300ms' }}>
+              <Card 
+                elevation={0}
+                sx={{ 
+                  maxWidth: 480,
+                  mx: 'auto',
+                  borderRadius: 4,
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  background: 'rgba(255,255,255,0.95)',
+                  backdropFilter: 'blur(20px)'
+                }}
               >
-                {isLoading ? (
-                  <CircularProgress size={16} sx={{ marginRight: 1, color: 'var(--primary-color)' }} />
-                ) : null}
-                Resend Verification Email
-              </button>
-            </Alert>
-          )}
-          
-          {/* Error message */}
-          {hasError && (
-            <Alert 
-              severity="error" 
-              sx={{ 
-                marginBottom: 3,
-                backgroundColor: '#fee2e2',
-                color: '#b91c1c',
-                border: '1px solid #fecaca',
-                '& .MuiAlert-icon': {
-                  color: '#ef4444'
-                }
-              }}
-            >
-              {hasError}
-            </Alert>
-          )}
-          
-          {/* Login form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="your@email.com"
-              />
-            </div>
-            
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Password
-                </label>
-                <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800">
-                  Forgot password?
-                </Link>
-              </div>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="••••••••"
-              />
-            </div>
-            
-            <div className="flex items-center">
-              <input
-                id="rememberMe"
-                name="rememberMe"
-                type="checkbox"
-                checked={formData.rememberMe}
-                onChange={handleChange}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
-                Remember me
-              </label>
-            </div>
-            
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex justify-center items-center"
-              >
-                {isLoading ? (
-                  <CircularProgress size={24} sx={{ color: 'white', marginRight: 1 }} />
-                ) : null}
-                Sign in
-              </button>
-            </div>
-          </form>
-          
-          <div className="mt-8 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link to="/signup" className="font-medium text-blue-600 hover:text-blue-800">
-                Sign up
-              </Link>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+                <CardContent sx={{ p: 4 }}>
+                  <Box sx={{ textAlign: 'center', mb: 4 }}>
+                    <Typography variant="h4" component="h2" sx={{ fontWeight: 700, mb: 1 }}>
+                      Sign In
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Enter your credentials to access your dashboard
+                    </Typography>
+                  </Box>
+
+                  {error && (
+                    <Fade in={true}>
+                      <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+                        {error}
+                      </Alert>
+                    </Fade>
+                  )}
+
+                  <Box component="form" onSubmit={handleSubmit}>
+                    <Stack spacing={3}>
+                      <TextField
+                        fullWidth
+                        label="Email Address"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        required
+                        autoComplete="email"
+                        autoFocus
+                        variant="outlined"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2
+                          }
+                        }}
+                      />
+
+                      <TextField
+                        fullWidth
+                        label="Password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        required
+                        autoComplete="current-password"
+                        variant="outlined"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2
+                          }
+                        }}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton
+                                aria-label="toggle password visibility"
+                                onClick={handleTogglePasswordVisibility}
+                                edge="end"
+                                size="small"
+                              >
+                                {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              name="rememberMe"
+                              checked={formData.rememberMe}
+                              onChange={handleInputChange}
+                              size="small"
+                            />
+                          }
+                          label={
+                            <Typography variant="body2">
+                              Remember me
+                            </Typography>
+                          }
+                        />
+                        
+                        <Link 
+                          to="/forgot-password"
+                          style={{ 
+                            textDecoration: 'none',
+                            color: 'inherit'
+                          }}
+                        >
+                          <Typography 
+                            variant="body2" 
+                            color="primary" 
+                            sx={{ 
+                              '&:hover': { textDecoration: 'underline' },
+                              fontWeight: 500
+                            }}
+                          >
+                            Forgot Password?
+                          </Typography>
+                        </Link>
+                      </Box>
+
+                      <Button
+                        type="submit"
+                        fullWidth
+                        variant="contained"
+                        size="large"
+                        disabled={loading}
+                        startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <LoginIcon />}
+                        sx={{
+                          py: 1.5,
+                          borderRadius: 3,
+                          fontWeight: 600,
+                          fontSize: '1rem',
+                          boxShadow: 2,
+                          '&:hover': { boxShadow: 4 }
+                        }}
+                      >
+                        {loading ? 'Signing In...' : 'Sign In'}
+                      </Button>
+                    </Stack>
+                  </Box>
+
+                  <Divider sx={{ my: 4 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      or
+                    </Typography>
+                  </Divider>
+
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      Don't have an account?
+                    </Typography>
+                    <Button
+                      component={Link}
+                      to="/signup"
+                      variant="outlined"
+                      size="large"
+                      fullWidth
+                      sx={{
+                        py: 1.5,
+                        borderRadius: 3,
+                        fontWeight: 600,
+                        borderWidth: 2,
+                        '&:hover': { borderWidth: 2 }
+                      }}
+                    >
+                      Create Account
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Fade>
+          </Box>
+        </Box>
+      </Container>
+    </Box>
   );
 };
 

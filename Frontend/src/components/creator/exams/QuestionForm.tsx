@@ -21,9 +21,9 @@ import PreviewIcon from '@mui/icons-material/Preview';
 import TextFieldsIcon from '@mui/icons-material/TextFields';
 
 import type { IQuestion } from './types';
-import TailwindQuestionOptions from './TailwindQuestionOptions';
-import TailwindMediaUploader from './TailwindMediaUploader';
-import TailwindMediaPreviews from './TailwindMediaPreviews';
+import QuestionOptions from './QuestionOptions';
+import MediaUploader from './MediaUploader';
+import MediaPreviews from './MediaPreviews';
 import RichTextEditor from './RichTextEditor';
 import MarkdownPreview from './MarkdownPreview';
 
@@ -275,11 +275,11 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
           <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
             Media Attachments
           </Typography>
-          <TailwindMediaUploader 
+          <MediaUploader 
             questionIndex={index} 
             onMediaUploaded={handleMediaUploadedLocal} 
           />
-          <TailwindMediaPreviews question={question} />
+          <MediaPreviews question={question} />
         </Grid>
 
         {/* Answer Options Section */}
@@ -288,7 +288,7 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
           <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
             Answer Options
           </Typography>
-          <TailwindQuestionOptions
+          <QuestionOptions
             question={question}
             onOptionChange={handleOptionChangeLocal}
             onCorrectAnswerChange={handleCorrectAnswerChangeLocal}

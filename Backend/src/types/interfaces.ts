@@ -7,6 +7,8 @@ export interface IUser extends Document {
   passwordHash: string;
   role: 'admin' | 'creator' | 'student';
   name?: string;
+  firstName?: string;
+  lastName?: string;
   username?: string;
   stripeCustomerId?: string;
   subscriptionPlan?: 'Basic' | 'Pro' | 'Enterprise' | null;
@@ -17,6 +19,7 @@ export interface IUser extends Document {
   passwordResetToken?: string;
   passwordResetExpires?: Date;
   suspended?: boolean;
+  lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

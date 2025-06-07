@@ -1,5 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material/styles';
+import { CssBaseline } from '@mui/material';
 import './index.css';
+import theme from './theme';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import ForgotPassword from './pages/ForgotPassword';
@@ -32,8 +35,10 @@ const LayoutWrapper = () => (
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Router>
+        <AuthProvider>
         <Routes>
           {/* Public routes - no layout */}
           <Route path="/signin" element={<SignIn />} />
@@ -84,8 +89,9 @@ function App() {
           <Route path="/" element={<Navigate to="/signin" replace />} />
           <Route path="*" element={<Navigate to="/signin" replace />} />
         </Routes>
-      </AuthProvider>
-    </Router>
+        </AuthProvider>
+      </Router>
+    </ThemeProvider>
   );
 }
 

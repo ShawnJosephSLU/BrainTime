@@ -50,8 +50,8 @@ export const getAnalyticsOverview = async (req: AuthenticatedRequest, res: Respo
     
     // Recent activity (last 10 attempts)
     const recentActivity = analytics.slice(0, 10).map(a => ({
-      studentName: `${a.studentId.firstName || ''} ${a.studentId.lastName || ''}`.trim() || a.studentId.email,
-      quizTitle: a.quizId.title,
+      studentName: `${(a.studentId as any).firstName || ''} ${(a.studentId as any).lastName || ''}`.trim() || (a.studentId as any).email,
+      quizTitle: (a.quizId as any).title,
       score: a.percentage,
       completedAt: a.completedAt,
       timeSpent: a.timeSpent
@@ -63,7 +63,7 @@ export const getAnalyticsOverview = async (req: AuthenticatedRequest, res: Respo
       const quizId = a.quizId._id.toString();
       if (!quizPerformance.has(quizId)) {
         quizPerformance.set(quizId, {
-          title: a.quizId.title,
+          title: (a.quizId as any).title,
           attempts: 0,
           totalScore: 0,
           averageScore: 0
@@ -213,10 +213,10 @@ export const getQuizAnalytics = async (req: AuthenticatedRequest, res: Response)
     
     // Student performance
     const studentPerformance = analytics.map(a => ({
-      studentId: a.studentId._id,
-      studentName: `${a.studentId.firstName || ''} ${a.studentId.lastName || ''}`.trim() || a.studentId.email,
-      studentEmail: a.studentId.email,
-      groupName: a.groupId?.name || 'No Group',
+      studentId: (a.studentId as any)._id,
+      studentName: `${(a.studentId as any).firstName || ''} ${(a.studentId as any).lastName || ''}`.trim() || (a.studentId as any).email,
+      studentEmail: (a.studentId as any).email,
+      groupName: (a.groupId as any)?.name || 'No Group',
       score: a.score,
       percentage: a.percentage,
       timeSpent: a.timeSpent,
@@ -310,8 +310,8 @@ export const getGroupAnalytics = async (req: AuthenticatedRequest, res: Response
       
       return {
         studentId: student._id,
-        studentName: `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.email,
-        studentEmail: student.email,
+        studentName: `${(student as any).firstName || ''} ${(student as any).lastName || ''}`.trim() || (student as any).email,
+                  studentEmail: (student as any).email,
         attemptsCount: studentAnalytics.length,
         averageScore: Math.round(averageStudentScore * 100) / 100,
         lastActivity: studentAnalytics.length > 0 ? studentAnalytics[0].completedAt : null
@@ -325,7 +325,7 @@ export const getGroupAnalytics = async (req: AuthenticatedRequest, res: Response
       if (!quizPerformance.has(quizId)) {
         quizPerformance.set(quizId, {
           quizId,
-          title: a.quizId.title,
+          title: (a.quizId as any).title,
           attempts: 0,
           totalScore: 0,
           averageScore: 0,
@@ -359,8 +359,8 @@ export const getGroupAnalytics = async (req: AuthenticatedRequest, res: Response
       studentEngagement: studentEngagement.sort((a, b) => b.averageScore - a.averageScore),
       quizPerformance: quizPerformanceArray.sort((a, b) => b.averageScore - a.averageScore),
       recentActivity: analytics.slice(0, 20).map(a => ({
-        studentName: `${a.studentId.firstName || ''} ${a.studentId.lastName || ''}`.trim() || a.studentId.email,
-        quizTitle: a.quizId.title,
+        studentName: `${(a.studentId as any).firstName || ''} ${(a.studentId as any).lastName || ''}`.trim() || (a.studentId as any).email,
+        quizTitle: (a.quizId as any).title,
         score: a.percentage,
         completedAt: a.completedAt
       }))
@@ -437,9 +437,9 @@ export const exportAnalytics = async (req: AuthenticatedRequest, res: Response):
       ];
       
       const csvRows = analytics.map(a => [
-        a.studentId.email,
-        `${a.studentId.firstName || ''} ${a.studentId.lastName || ''}`.trim() || 'N/A',
-        type === 'quiz' ? (a.groupId?.name || 'No Group') : a.quizId.title,
+        (a.studentId as any).email,
+        `${(a.studentId as any).firstName || ''} ${(a.studentId as any).lastName || ''}`.trim() || 'N/A',
+        type === 'quiz' ? ((a.groupId as any)?.name || 'No Group') : (a.quizId as any).title,
         a.score,
         a.percentage,
         a.timeSpent,

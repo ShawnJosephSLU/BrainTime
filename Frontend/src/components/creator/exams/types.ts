@@ -28,6 +28,7 @@ export interface IExamData {
   shuffleQuestions: boolean;
   showResults: boolean;
   isPublic: boolean;
+  selectedGroups: string[];
 }
 
 export const emptyQuestion: IQuestion = {

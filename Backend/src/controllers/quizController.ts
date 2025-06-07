@@ -4,10 +4,12 @@ import bcrypt from 'bcryptjs';
 import Quiz from '../models/Quiz';
 import ExamSession from '../models/ExamSession';
 import ResponseModel from '../models/Response';
+import User from '../models/User';
 import { IQuestion } from '../types/interfaces';
 import { uploadToS3 } from '../utils/s3Utils';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
 import Group from '../models/Group';
+import { sendExamCompletionNotification, sendExamResults } from '../services/email/emailService';
 
 // Create a new quiz
 export const createQuiz = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -329,11 +331,20 @@ export const authenticateForQuiz = async (req: AuthenticatedRequest, res: Respon
       return;
     }
     
-    // Verify student is in a group that has access to this quiz
-    const hasAccess = await Group.exists({
-      students: req.user.id,
-      exams: quizId
-    });
+    // Check access permissions
+    let hasAccess = false;
+    
+    // If quiz is public, anyone can access
+    if (quiz.isPublic) {
+      hasAccess = true;
+    } else {
+      // For private quizzes, check group membership
+      const groupAccess = await Group.exists({
+        students: req.user.id,
+        exams: quizId
+      });
+      hasAccess = !!groupAccess;
+    }
     
     if (!hasAccess) {
       console.log(`User ${req.user.id} doesn't have access to quiz ${quizId}`);
@@ -484,6 +495,15 @@ export const submitExam = async (req: AuthenticatedRequest, res: Response): Prom
       return;
     }
     
+    // Get quiz and student details for notifications
+    const quiz = await Quiz.findById(session.quizId).populate('adminId', 'email name firstName lastName');
+    const student = await User.findById(req.user.id).select('email name firstName lastName');
+    
+    if (!quiz || !student) {
+      res.status(StatusCodes.NOT_FOUND).json({ message: 'Quiz or student not found' });
+      return;
+    }
+    
     // Mark the session as completed
     session.isCompleted = true;
     session.endTime = new Date();
@@ -518,7 +538,55 @@ export const submitExam = async (req: AuthenticatedRequest, res: Response): Prom
       await response.save();
     }
     
-    res.status(StatusCodes.OK).json({ message: 'Exam submitted successfully', responseId: response._id });
+    // Send notification to quiz host
+    try {
+      const hostUser = quiz.adminId as any;
+      const studentName = student.name || `${student.firstName} ${student.lastName}` || 'Student';
+      const hostEmail = hostUser.email;
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      
+      await sendExamCompletionNotification(
+        hostEmail,
+        studentName,
+        student.email,
+        quiz.title,
+        new Date(),
+        frontendUrl,
+        (quiz._id as any).toString()
+      );
+    } catch (emailError) {
+      console.error('Failed to send host notification:', emailError);
+      // Don't fail the submission if email fails
+    }
+    
+    // If quiz shows results immediately, send results to student
+    if (quiz.showResults) {
+      try {
+        const studentName = student.name || `${student.firstName} ${student.lastName}` || 'Student';
+        const maxScore = quiz.questions.reduce((total, q) => total + (q.points || 1), 0);
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        
+        await sendExamResults(
+          student.email,
+          studentName,
+          quiz.title,
+          response.totalScore || 0,
+          maxScore,
+          response.feedback,
+          frontendUrl,
+          (quiz._id as any).toString()
+        );
+      } catch (emailError) {
+        console.error('Failed to send student results:', emailError);
+        // Don't fail the submission if email fails
+      }
+    }
+    
+    res.status(StatusCodes.OK).json({ 
+      message: 'Exam submitted successfully', 
+      responseId: response._id,
+      showResults: quiz.showResults
+    });
   } catch (error) {
     console.error('Error submitting exam:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Failed to submit exam' });
@@ -570,7 +638,7 @@ export const getSubmissionDetails = async (req: AuthenticatedRequest, res: Respo
     
     const submission = await ResponseModel.findById(submissionId)
       .populate('studentId', 'email firstName lastName')
-      .populate('quizId');
+      .populate('quizId', 'title description questions adminId');
     
     if (!submission) {
       res.status(StatusCodes.NOT_FOUND).json({ message: 'Submission not found' });
@@ -592,6 +660,36 @@ export const getSubmissionDetails = async (req: AuthenticatedRequest, res: Respo
   } catch (error) {
     console.error('Error fetching submission details:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Failed to fetch submission details' });
+  }
+};
+
+// Get all public quizzes for student discovery
+export const getPublicQuizzes = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Authentication required' });
+      return;
+    }
+
+    // Allow all authenticated users to access public quizzes
+    const quizzes = await Quiz.find({ 
+      isPublic: true, 
+      isLive: true 
+    })
+      .populate('adminId', 'email name firstName lastName')
+      .select('title description startTime endTime duration isLive isPublic adminId createdAt')
+      .sort({ createdAt: -1 });
+    
+    // Filter quizzes that are currently available (within time window)
+    const now = new Date();
+    const availableQuizzes = quizzes.filter(quiz => 
+      quiz.startTime <= now && quiz.endTime >= now
+    );
+
+    res.status(StatusCodes.OK).json(availableQuizzes);
+  } catch (error) {
+    console.error('Error fetching public quizzes:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Failed to fetch public quizzes' });
   }
 };
 
@@ -655,6 +753,35 @@ export const gradeSubmission = async (req: AuthenticatedRequest, res: Response):
     
     await submission.save();
     
+    // Send results to student after grading
+    try {
+      const populatedSubmission = await ResponseModel.findById(submission._id)
+        .populate('studentId', 'email name firstName lastName')
+        .populate('quizId', 'title questions');
+      
+      if (populatedSubmission) {
+        const student = populatedSubmission.studentId as any;
+        const quiz = populatedSubmission.quizId as any;
+        const studentName = student.name || `${student.firstName} ${student.lastName}` || 'Student';
+        const maxScore = quiz.questions.reduce((total: number, q: any) => total + (q.points || 1), 0);
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        
+        await sendExamResults(
+          student.email,
+          studentName,
+          quiz.title,
+          totalScore,
+          maxScore,
+          feedback,
+          frontendUrl,
+          (quiz._id as any).toString()
+        );
+      }
+    } catch (emailError) {
+      console.error('Failed to send graded results to student:', emailError);
+      // Don't fail the grading if email fails
+    }
+    
     res.status(StatusCodes.OK).json({ 
       message: 'Submission graded successfully',
       submission
@@ -662,5 +789,103 @@ export const gradeSubmission = async (req: AuthenticatedRequest, res: Response):
   } catch (error) {
     console.error('Error grading submission:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Failed to grade submission' });
+  }
+};
+
+// Get student's own results for a specific quiz
+export const getStudentResults = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Authentication required' });
+      return;
+    }
+
+    const { quizId } = req.params;
+    
+    // Find the student's submission
+    const submission = await ResponseModel.findOne({
+      quizId,
+      studentId: req.user.id
+    }).populate('quizId', 'title description showResults questions');
+    
+    if (!submission) {
+      res.status(StatusCodes.NOT_FOUND).json({ message: 'No submission found for this quiz' });
+      return;
+    }
+    
+    const quiz = submission.quizId as any;
+    
+    // Check if results should be shown
+    if (!quiz.showResults && !submission.isGraded) {
+      res.status(StatusCodes.FORBIDDEN).json({ 
+        message: 'Results are not available yet. Please wait for your instructor to grade the exam.' 
+      });
+      return;
+    }
+    
+    // Calculate detailed results
+    const maxScore = quiz.questions.reduce((total: number, q: any) => total + (q.points || 1), 0);
+    const percentage = maxScore > 0 ? Math.round((submission.totalScore || 0) / maxScore * 100) : 0;
+    
+    const results = {
+      quizTitle: quiz.title,
+      submittedAt: submission.submittedAt,
+      isGraded: submission.isGraded,
+      gradedAt: submission.gradedAt,
+      totalScore: submission.totalScore || 0,
+      maxScore,
+      percentage,
+      feedback: submission.feedback,
+      answers: submission.answers.map(answer => ({
+        questionId: answer.questionId,
+        studentAnswer: answer.studentAnswer,
+        score: answer.score,
+        feedback: answer.feedback,
+        isCorrect: answer.isCorrect
+      }))
+    };
+    
+    res.status(StatusCodes.OK).json(results);
+  } catch (error) {
+    console.error('Error fetching student results:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Failed to fetch results' });
+  }
+};
+
+// Get all results for the current student
+export const getMyResults = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Authentication required' });
+      return;
+    }
+
+    // Get all submissions for this student
+    const submissions = await ResponseModel.find({
+      studentId: req.user.id
+    })
+      .populate('quizId', 'title description showResults adminId')
+      .sort({ submittedAt: -1 });
+    
+    const results = submissions.map(submission => {
+      const quiz = submission.quizId as any;
+      const canViewResults = quiz.showResults || submission.isGraded;
+      
+      return {
+        quizId: quiz._id,
+        quizTitle: quiz.title,
+        submittedAt: submission.submittedAt,
+        isGraded: submission.isGraded,
+        gradedAt: submission.gradedAt,
+        totalScore: canViewResults ? submission.totalScore : null,
+        feedback: canViewResults ? submission.feedback : null,
+        canViewResults
+      };
+    });
+    
+    res.status(StatusCodes.OK).json(results);
+  } catch (error) {
+    console.error('Error fetching student results:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Failed to fetch your results' });
   }
 }; 

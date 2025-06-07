@@ -17,7 +17,9 @@ import {
   Alert,
   AlertTitle,
   TextField,
-  InputAdornment
+  InputAdornment,
+  Tabs,
+  Tab
 } from '@mui/material';
 import SchoolIcon from '@mui/icons-material/School';
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -28,7 +30,10 @@ import EventIcon from '@mui/icons-material/Event';
 import HowToRegIcon from '@mui/icons-material/HowToReg';
 import SearchIcon from '@mui/icons-material/Search';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import PublicIcon from '@mui/icons-material/Public';
 import { format } from 'date-fns';
+import PublicGroups from '../../components/student/PublicGroups';
+import PublicExams from '../../components/student/PublicExams';
 
 interface Group {
   _id: string;
@@ -60,6 +65,7 @@ const StudentDashboard = () => {
   const [enrollmentSuccess, setEnrollmentSuccess] = useState<string | null>(null);
   const [enrollmentCode, setEnrollmentCode] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [currentTab, setCurrentTab] = useState<number>(0);
 
   useEffect(() => {
     refreshAuth();
@@ -166,6 +172,10 @@ const StudentDashboard = () => {
     navigate('/student/exams');
   };
 
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue);
+  };
+
   // Check if an exam is active (current time is between start and end time)
   const isExamActive = (exam: Exam) => {
     const now = new Date();
@@ -210,21 +220,32 @@ const StudentDashboard = () => {
         <Typography variant="h4" component="h1" fontWeight="bold">
           Student Dashboard
         </Typography>
-        <TextField
-          size="small"
-          placeholder="Search exams..."
-          variant="outlined"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-          sx={{ width: '250px' }}
-        />
+        {currentTab === 0 && (
+          <TextField
+            size="small"
+            placeholder="Search exams..."
+            variant="outlined"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ width: '250px' }}
+          />
+        )}
+      </Box>
+
+      {/* Navigation Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={currentTab} onChange={handleTabChange} aria-label="student dashboard tabs">
+          <Tab icon={<SchoolIcon />} label="My Groups & Exams" />
+          <Tab icon={<PublicIcon />} label="Discover Public Groups" />
+          <Tab icon={<AssignmentIcon />} label="Public Assessments" />
+        </Tabs>
       </Box>
 
       {/* Alerts */}
@@ -242,8 +263,11 @@ const StudentDashboard = () => {
         </Alert>
       )}
 
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      {/* Tab Content */}
+      {currentTab === 0 && (
+        <>
+          {/* Stats Cards */}
+          <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid component="div" size={{ xs: 12, sm: 6, md: 3 }}>
           <Paper 
             elevation={0} 
@@ -608,6 +632,14 @@ const StudentDashboard = () => {
           </Paper>
         </Grid>
       </Grid>
+        </>
+      )}
+      
+      {/* Public Groups Tab */}
+      {currentTab === 1 && <PublicGroups />}
+      
+      {/* Public Exams Tab */}
+      {currentTab === 2 && <PublicExams />}
     </Box>
   );
 };

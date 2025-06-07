@@ -13,7 +13,7 @@ import { AuthenticatedRequest } from '../middleware/authMiddleware';
  */
 export const createGroup = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { name, description } = req.body;
+    const { name, description, isPublic, password } = req.body;
     
     if (!name) {
       res.status(400).json({ message: 'Group name is required' });
@@ -30,6 +30,8 @@ export const createGroup = async (req: AuthenticatedRequest, res: Response): Pro
       enrollmentCode,
       students: [],
       exams: [],
+      isPublic: isPublic || false,
+      password: password || null,
     });
     
     await newGroup.save();
@@ -39,6 +41,7 @@ export const createGroup = async (req: AuthenticatedRequest, res: Response): Pro
       name: newGroup.name,
       description: newGroup.description,
       enrollmentCode: newGroup.enrollmentCode,
+      isPublic: newGroup.isPublic,
     });
   } catch (error) {
     console.error('Error creating group:', error);
@@ -437,6 +440,97 @@ export const removeExamFromGroup = async (req: AuthenticatedRequest, res: Respon
   } catch (error) {
     console.error('Error removing exam from group:', error);
     res.status(500).json({ message: 'Failed to remove exam from group' });
+  }
+};
+
+/**
+ * Get all public groups for student discovery
+ * @route GET /api/groups/public
+ * @access Private - Student
+ */
+export const getPublicGroups = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(403).json({ message: 'Authentication required' });
+      return;
+    }
+
+    // Find all public groups
+    const groups = await Group.find({ isPublic: true })
+      .populate('creatorId', 'email name')
+      .select('name description enrollmentCode isPublic students exams createdAt')
+      .sort({ createdAt: -1 });
+    
+    // Add enrollment status for each group
+    const userObjectId = new mongoose.Types.ObjectId(req.user.id);
+    const groupsWithStatus = groups.map(group => ({
+      ...group.toObject(),
+      isEnrolled: group.students.some(id => id.equals(userObjectId)),
+      studentCount: group.students.length,
+      examCount: group.exams.length,
+    }));
+
+    res.status(200).json(groupsWithStatus);
+  } catch (error) {
+    console.error('Error fetching public groups:', error);
+    res.status(500).json({ message: 'Failed to fetch public groups' });
+  }
+};
+
+/**
+ * Join a public group with optional password
+ * @route POST /api/groups/:groupId/join
+ * @access Private - Student
+ */
+export const joinPublicGroup = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(403).json({ message: 'Authentication required' });
+      return;
+    }
+
+    const { groupId } = req.params;
+    const { password } = req.body;
+
+    const group = await Group.findById(groupId);
+    
+    if (!group) {
+      res.status(404).json({ message: 'Group not found' });
+      return;
+    }
+
+    if (!group.isPublic) {
+      res.status(403).json({ message: 'This group is not public' });
+      return;
+    }
+
+    // Check password if group has one
+    if (group.password && group.password !== password) {
+      res.status(401).json({ message: 'Incorrect group password' });
+      return;
+    }
+
+    const userObjectId = new mongoose.Types.ObjectId(req.user.id);
+    
+    // Check if already enrolled
+    const isAlreadyEnrolled = group.students.some(id => id.equals(userObjectId));
+    if (isAlreadyEnrolled) {
+      res.status(400).json({ message: 'Already enrolled in this group' });
+      return;
+    }
+
+    // Add student to group
+    group.students.push(userObjectId);
+    await group.save();
+
+    res.status(200).json({
+      message: 'Successfully joined group',
+      groupName: group.name,
+      groupId: group._id,
+    });
+  } catch (error) {
+    console.error('Error joining public group:', error);
+    res.status(500).json({ message: 'Failed to join group' });
   }
 };
 

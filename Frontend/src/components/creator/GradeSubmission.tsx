@@ -279,7 +279,7 @@ const GradeSubmission: React.FC = () => {
   
   // Format student answers for display
   const formatStudentAnswer = (answer: IAnswer) => {
-    const question = submission.quizId.questions.find(q => q._id === answer.questionId);
+    const question = submission?.quizId?.questions?.find(q => q._id === answer.questionId);
     
     if (!question) return 'No answer';
     
@@ -311,9 +311,9 @@ const GradeSubmission: React.FC = () => {
   };
   
   // Calculate max possible score
-  const maxPossibleScore = submission.quizId.questions.reduce(
-    (sum, q) => sum + q.points, 0
-  );
+  const maxPossibleScore = submission?.quizId?.questions?.reduce(
+    (sum, q) => sum + (q.points || 0), 0
+  ) || 0;
   
   return (
     <Box sx={{ p: 3 }}>
@@ -366,7 +366,7 @@ const GradeSubmission: React.FC = () => {
             </Typography>
             
             <Stepper activeStep={activeStep} orientation="vertical">
-              {submission.quizId.questions.map((question, index) => {
+              {(submission?.quizId?.questions || []).map((question, index) => {
                 const answer = gradedAnswers.find(a => a.questionId === question._id);
                 if (!answer) return null;
                 
@@ -477,7 +477,7 @@ const GradeSubmission: React.FC = () => {
                         >
                           Previous
                         </Button>
-                        {index < submission.quizId.questions.length - 1 ? (
+                        {index < (submission?.quizId?.questions?.length || 0) - 1 ? (
                           <Button
                             variant="contained"
                             onClick={handleNext}
@@ -488,7 +488,7 @@ const GradeSubmission: React.FC = () => {
                           <Button
                             variant="contained"
                             color="primary"
-                            onClick={() => setActiveStep(submission.quizId.questions.length)}
+                            onClick={() => setActiveStep(submission?.quizId?.questions?.length || 0)}
                           >
                             Finish Grading
                           </Button>
@@ -569,10 +569,10 @@ const GradeSubmission: React.FC = () => {
           
           <Box sx={{ mb: 3 }}>
             <Typography variant="body2" gutterBottom>
-              <strong>Total Questions:</strong> {submission.quizId.questions.length}
+                              <strong>Total Questions:</strong> {submission?.quizId?.questions?.length || 0}
             </Typography>
             <Typography variant="body2" gutterBottom>
-              <strong>Questions Graded:</strong> {gradedAnswers.filter(a => a.score !== undefined).length} / {submission.quizId.questions.length}
+                              <strong>Questions Graded:</strong> {gradedAnswers.filter(a => a.score !== undefined).length} / {submission?.quizId?.questions?.length || 0}
             </Typography>
             <Typography variant="body2" gutterBottom>
               <strong>Current Score:</strong> {totalScore} / {maxPossibleScore}

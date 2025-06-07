@@ -6,14 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { 
   Box, 
   Button, 
-  Paper, 
   Typography, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow,
   IconButton,
   Chip,
   Dialog,
@@ -22,7 +15,18 @@ import {
   DialogActions,
   TextField,
   CircularProgress,
-  Alert
+  Alert,
+  Card,
+  CardContent,
+  CardActions,
+
+  Divider,
+  Stack,
+  Avatar,
+  Tooltip,
+  Container,
+  Fade,
+  Zoom
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -31,7 +35,11 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { format } from 'date-fns';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StopIcon from '@mui/icons-material/Stop';
+import { format, isAfter, isBefore } from 'date-fns';
 
 interface IExam {
   _id: string;
@@ -196,141 +204,383 @@ const ExamsList: React.FC = () => {
     }
   };
 
+  const getExamStatus = (exam: IExam) => {
+    const now = new Date();
+    const startTime = new Date(exam.startTime);
+    const endTime = new Date(exam.endTime);
+
+    if (!exam.isLive) {
+      return { label: 'Offline', color: 'default' as const, icon: <StopIcon /> };
+    }
+    
+    if (isBefore(now, startTime)) {
+      return { label: 'Scheduled', color: 'info' as const, icon: <CalendarTodayIcon /> };
+    }
+    
+    if (isAfter(now, endTime)) {
+      return { label: 'Ended', color: 'error' as const, icon: <StopIcon /> };
+    }
+    
+    return { label: 'Live', color: 'success' as const, icon: <PlayArrowIcon /> };
+  };
+
+  const EmptyState = () => (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        py: 8,
+        px: 3,
+        textAlign: 'center'
+      }}
+    >
+      <Box
+        sx={{
+          width: 120,
+          height: 120,
+          borderRadius: '50%',
+          backgroundColor: 'primary.50',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          mb: 3
+        }}
+      >
+        <AddIcon sx={{ fontSize: 48, color: 'primary.main' }} />
+      </Box>
+      
+      <Typography variant="h5" fontWeight="bold" gutterBottom>
+        Create Your First Exam
+      </Typography>
+      
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 400 }}>
+        Start building engaging exams for your students. Add questions, set schedules, and track performance all in one place.
+      </Typography>
+      
+      <Button
+        variant="contained"
+        size="large"
+        startIcon={<AddIcon />}
+        onClick={handleCreateExam}
+        sx={{ 
+          borderRadius: 3,
+          px: 4,
+          py: 1.5,
+          fontWeight: 600,
+          boxShadow: 2,
+          '&:hover': { boxShadow: 4 }
+        }}
+      >
+        Create Your First Exam
+      </Button>
+    </Box>
+  );
+
+  const ExamCard = ({ exam, index }: { exam: IExam; index: number }) => {
+    const status = getExamStatus(exam);
+
+    return (
+      <Zoom in={true} style={{ transitionDelay: `${index * 100}ms` }}>
+        <Card
+          sx={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: 4,
+              borderColor: 'primary.300'
+            }
+          }}
+        >
+          <CardContent sx={{ flexGrow: 1, p: 3 }}>
+            {/* Header */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+              <Box sx={{ flexGrow: 1, mr: 2 }}>
+                <Typography 
+                  variant="h6" 
+                  fontWeight="bold" 
+                  gutterBottom
+                  sx={{ 
+                    lineHeight: 1.3,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical'
+                  }}
+                >
+                  {exam.title}
+                </Typography>
+                
+                <Chip
+                  icon={status.icon}
+                  label={status.label}
+                  color={status.color}
+                  size="small"
+                  sx={{ fontWeight: 500 }}
+                />
+              </Box>
+              
+              <Avatar
+                sx={{
+                  width: 48,
+                  height: 48,
+                  bgcolor: status.color === 'success' ? 'success.100' : 'grey.100',
+                  color: status.color === 'success' ? 'success.600' : 'grey.600'
+                }}
+              >
+                {status.icon}
+              </Avatar>
+            </Box>
+
+            {/* Description */}
+            {exam.description && (
+              <Typography 
+                variant="body2" 
+                color="text.secondary" 
+                sx={{ 
+                  mb: 3,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical'
+                }}
+              >
+                {exam.description}
+              </Typography>
+            )}
+
+            <Divider sx={{ my: 2 }} />
+
+            {/* Details */}
+            <Stack spacing={2}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CalendarTodayIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Start:</strong> {format(new Date(exam.startTime), 'MMM dd, yyyy')}
+                </Typography>
+              </Box>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CalendarTodayIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                <Typography variant="body2" color="text.secondary">
+                  <strong>End:</strong> {format(new Date(exam.endTime), 'MMM dd, yyyy')}
+                </Typography>
+              </Box>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Duration:</strong> {exam.duration} minutes
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+
+          <Divider />
+
+          <CardActions sx={{ p: 2, pt: 1.5 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+              <Stack direction="row" spacing={0.5}>
+                <Tooltip title="View Details">
+                  <IconButton
+                    size="small"
+                    onClick={() => handleViewExam(exam._id)}
+                    sx={{ 
+                      color: 'primary.main',
+                      '&:hover': { bgcolor: 'primary.50' }
+                    }}
+                  >
+                    <VisibilityIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                
+                <Tooltip title="Edit Exam">
+                  <IconButton
+                    size="small"
+                    onClick={() => handleEditExam(exam._id)}
+                    sx={{ 
+                      color: 'text.secondary',
+                      '&:hover': { bgcolor: 'action.hover' }
+                    }}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                
+                <Tooltip title={exam.isLive ? 'Take Offline' : 'Make Live'}>
+                  <IconButton
+                    size="small"
+                    onClick={() => openToggleLiveDialog(exam)}
+                    sx={{ 
+                      color: exam.isLive ? 'error.main' : 'success.main',
+                      '&:hover': { 
+                        bgcolor: exam.isLive ? 'error.50' : 'success.50'
+                      }
+                    }}
+                  >
+                    {exam.isLive ? <LockIcon fontSize="small" /> : <LockOpenIcon fontSize="small" />}
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+              
+              <Tooltip title="Delete Exam">
+                <IconButton
+                  size="small"
+                  onClick={() => openDeleteDialog(exam._id)}
+                  sx={{ 
+                    color: 'error.main',
+                    '&:hover': { bgcolor: 'error.50' }
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </CardActions>
+        </Card>
+      </Zoom>
+    );
+  };
+
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
-          Exams
-        </Typography>
-        
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Box>
+          <Typography variant="h3" fontWeight="bold" gutterBottom>
+            My Exams
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Manage and monitor your exam collection
+          </Typography>
+        </Box>
+        
+        <Stack direction="row" spacing={2}>
           <Button
             variant="outlined"
-            color="primary"
             startIcon={<RefreshIcon />}
             onClick={handleRetry}
-            sx={{ mr: 2 }}
+            sx={{ 
+              borderRadius: 2,
+              px: 3,
+              fontWeight: 500
+            }}
           >
-            Refresh Data
+            Refresh
           </Button>
           
           <Button
             variant="contained"
-            color="primary"
             startIcon={<AddIcon />}
             onClick={handleCreateExam}
+            sx={{ 
+              borderRadius: 2,
+              px: 3,
+              fontWeight: 600,
+              boxShadow: 2,
+              '&:hover': { boxShadow: 4 }
+            }}
           >
             Create New Exam
           </Button>
-        </Box>
+        </Stack>
       </Box>
       
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
+      {/* Alerts */}
+      <Fade in={Boolean(error)} timeout={300}>
+        <Box>
+          {error && (
+            <Alert 
+              severity="error" 
+              sx={{ 
+                mb: 3,
+                borderRadius: 2,
+                '& .MuiAlert-message': { fontWeight: 500 }
+              }}
+              onClose={() => setError(null)}
+            >
+              {error}
+            </Alert>
+          )}
+        </Box>
+      </Fade>
       
-      {success && (
-        <Alert severity="success" sx={{ mb: 3 }}>
-          {success}
-        </Alert>
-      )}
+      <Fade in={Boolean(success)} timeout={300}>
+        <Box>
+          {success && (
+            <Alert 
+              severity="success" 
+              sx={{ 
+                mb: 3,
+                borderRadius: 2,
+                '& .MuiAlert-message': { fontWeight: 500 }
+              }}
+              onClose={() => setSuccess(null)}
+            >
+              {success}
+            </Alert>
+          )}
+        </Box>
+      </Fade>
       
+      {/* Loading State */}
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-          <CircularProgress />
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 8 }}>
+          <CircularProgress size={48} />
         </Box>
       ) : exams.length === 0 ? (
-        <Paper sx={{ p: 4, textAlign: 'center' }}>
-          <Typography variant="h6" gutterBottom>
-            No exams created yet
-          </Typography>
-          <Typography variant="body1" color="text.secondary" gutterBottom>
-            Get started by creating your first exam
-          </Typography>
-          <Button
-            variant="outlined"
-            startIcon={<AddIcon />}
-            onClick={handleCreateExam}
-            sx={{ mt: 2 }}
-          >
-            Create Exam
-          </Button>
-        </Paper>
+        <EmptyState />
       ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Title</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Start Time</TableCell>
-                <TableCell>End Time</TableCell>
-                <TableCell>Duration</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {exams.map((exam) => (
-                <TableRow key={exam._id}>
-                  <TableCell>{exam.title}</TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={exam.isLive ? 'Live' : 'Offline'} 
-                      color={exam.isLive ? 'success' : 'default'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>{format(new Date(exam.startTime), 'MMM dd, yyyy h:mm a')}</TableCell>
-                  <TableCell>{format(new Date(exam.endTime), 'MMM dd, yyyy h:mm a')}</TableCell>
-                  <TableCell>{exam.duration} minutes</TableCell>
-                  <TableCell align="right">
-                    <IconButton
-                      color="primary"
-                      onClick={() => handleViewExam(exam._id)}
-                      title="View Exam"
-                    >
-                      <VisibilityIcon />
-                    </IconButton>
-                    <IconButton
-                      color="primary"
-                      onClick={() => handleEditExam(exam._id)}
-                      title="Edit Exam"
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      color={exam.isLive ? 'error' : 'success'}
-                      onClick={() => openToggleLiveDialog(exam)}
-                      title={exam.isLive ? 'Take Offline' : 'Make Live'}
-                    >
-                      {exam.isLive ? <LockIcon /> : <LockOpenIcon />}
-                    </IconButton>
-                    <IconButton
-                      color="error"
-                      onClick={() => openDeleteDialog(exam._id)}
-                      title="Delete Exam"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                 /* Exams Grid */
+         <Box
+           sx={{
+             display: 'grid',
+             gridTemplateColumns: {
+               xs: '1fr',
+               sm: 'repeat(2, 1fr)',
+               lg: 'repeat(3, 1fr)'
+             },
+             gap: 3
+           }}
+         >
+           {exams.map((exam, index) => (
+             <ExamCard key={exam._id} exam={exam} index={index} />
+           ))}
+         </Box>
       )}
       
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={closeDeleteDialog}>
-        <DialogTitle>Delete Exam</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" gutterBottom>
-            This action cannot be undone. All student responses will also be deleted.
+      <Dialog 
+        open={deleteDialogOpen} 
+        onClose={closeDeleteDialog}
+        PaperProps={{
+          sx: { 
+            borderRadius: 3,
+            minWidth: 400
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Typography variant="h6" fontWeight="bold">
+            Delete Exam
           </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
+            This action cannot be undone. All student responses will also be deleted.
+          </Alert>
+          
           <Typography variant="body1" gutterBottom>
-            Type "DELETE" to confirm:
+            Type <strong>"DELETE"</strong> to confirm:
           </Typography>
           <TextField
             fullWidth
@@ -338,16 +588,28 @@ const ExamsList: React.FC = () => {
             onChange={(e) => setDeleteConfirmText(e.target.value)}
             variant="outlined"
             margin="normal"
+            placeholder="Type DELETE to confirm"
+            sx={{ 
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2
+              }
+            }}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDeleteDialog} disabled={isDeleting}>
+        <DialogActions sx={{ p: 3, pt: 1 }}>
+          <Button 
+            onClick={closeDeleteDialog} 
+            disabled={isDeleting}
+            sx={{ borderRadius: 2 }}
+          >
             Cancel
           </Button>
           <Button
             onClick={confirmDelete}
             color="error"
+            variant="contained"
             disabled={deleteConfirmText !== 'DELETE' || isDeleting}
+            sx={{ borderRadius: 2, minWidth: 100 }}
           >
             {isDeleting ? 'Deleting...' : 'Delete'}
           </Button>
@@ -355,9 +617,20 @@ const ExamsList: React.FC = () => {
       </Dialog>
       
       {/* Toggle Live Status Dialog */}
-      <Dialog open={toggleLiveDialogOpen} onClose={closeToggleLiveDialog}>
-        <DialogTitle>
-          {examToToggle?.isLive ? 'Take Exam Offline' : 'Make Exam Live'}
+      <Dialog 
+        open={toggleLiveDialogOpen} 
+        onClose={closeToggleLiveDialog}
+        PaperProps={{
+          sx: { 
+            borderRadius: 3,
+            minWidth: 400
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Typography variant="h6" fontWeight="bold">
+            {examToToggle?.isLive ? 'Take Exam Offline' : 'Make Exam Live'}
+          </Typography>
         </DialogTitle>
         <DialogContent>
           <Typography variant="body1">
@@ -366,14 +639,20 @@ const ExamsList: React.FC = () => {
               : 'This will allow students to access the exam with the provided password during the scheduled time period.'}
           </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={closeToggleLiveDialog} disabled={isTogglingLive}>
+        <DialogActions sx={{ p: 3, pt: 1 }}>
+          <Button 
+            onClick={closeToggleLiveDialog} 
+            disabled={isTogglingLive}
+            sx={{ borderRadius: 2 }}
+          >
             Cancel
           </Button>
           <Button
             onClick={confirmToggleLive}
             color={examToToggle?.isLive ? 'error' : 'primary'}
+            variant="contained"
             disabled={isTogglingLive}
+            sx={{ borderRadius: 2, minWidth: 120 }}
           >
             {isTogglingLive
               ? 'Updating...'
@@ -383,7 +662,7 @@ const ExamsList: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </Container>
   );
 };
 

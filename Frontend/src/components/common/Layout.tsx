@@ -13,20 +13,14 @@ import {
   Avatar,
   MenuItem,
   Tooltip,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
+  Button,
+  Chip,
+  Stack,
   Divider,
   Badge,
-  Paper,
-  Button,
-  Chip
+  ListItemIcon,
+  ListItemText
 } from '@mui/material';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import GroupIcon from '@mui/icons-material/Group';
@@ -37,45 +31,13 @@ import PersonIcon from '@mui/icons-material/Person';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import PaymentIcon from '@mui/icons-material/Payment';
 import AddIcon from '@mui/icons-material/Add';
-import { styled } from '@mui/material/styles';
+import SearchIcon from '@mui/icons-material/Search';
+
+import MenuIcon from '@mui/icons-material/Menu';
 
 interface LayoutProps {
   children: ReactNode;
 }
-
-const drawerWidth = 260;
-
-const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })<{
-  open?: boolean;
-}>(({ theme, open }) => ({
-  flexGrow: 1,
-  width: '100%',
-  maxWidth: '100%',
-  transition: theme.transitions.create('margin', {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen,
-  }),
-  marginLeft: 0,
-  backgroundColor: '#f9fafb',
-  minHeight: '100vh',
-  overflow: 'hidden', // Prevent horizontal scroll
-  ...(open && {
-    transition: theme.transitions.create('margin', {
-      easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-    marginLeft: `${drawerWidth}px`,
-    width: `calc(100% - ${drawerWidth}px)`,
-  }),
-}));
-
-const DrawerHeader = styled('div')(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  padding: theme.spacing(0, 1),
-  ...theme.mixins.toolbar,
-  justifyContent: 'flex-end',
-}));
 
 const getInitials = (name: string) => {
   return name
@@ -90,17 +52,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [drawerOpen, setDrawerOpen] = useState(true);
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
   const [anchorElNotifications, setAnchorElNotifications] = useState<null | HTMLElement>(null);
-
-  const handleDrawerOpen = () => {
-    setDrawerOpen(true);
-  };
-
-  const handleDrawerClose = () => {
-    setDrawerOpen(false);
-  };
+  const [anchorElNavigation, setAnchorElNavigation] = useState<null | HTMLElement>(null);
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
@@ -116,6 +70,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const handleCloseNotifications = () => {
     setAnchorElNotifications(null);
+  };
+
+  const handleOpenNavigation = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElNavigation(event.currentTarget);
+  };
+
+  const handleCloseNavigation = () => {
+    setAnchorElNavigation(null);
   };
 
   const handleLogout = async () => {
@@ -170,224 +132,293 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     return <>{children}</>;
   }
 
+  const navigationItems = getNavigationItems();
+
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <AppBar 
         position="fixed" 
         elevation={0}
         sx={{ 
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           backgroundColor: 'white',
           color: 'text.primary',
           borderBottom: '1px solid',
-          borderColor: 'divider'
+          borderColor: 'divider',
+          zIndex: 1200
         }}
       >
         <Container maxWidth={false}>
-          <Toolbar disableGutters sx={{ height: 64 }}>
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              onClick={handleDrawerOpen}
-              edge="start"
-              sx={{ mr: 2, ...(drawerOpen && { display: 'none' }) }}
-            >
-              <MenuIcon />
-            </IconButton>
-            
-            <SchoolIcon sx={{ display: { xs: 'none', md: 'flex' }, mr: 1, color: 'primary.main' }} />
-            <Typography
-              variant="h6"
-              noWrap
-              component={Link}
-              to="/"
-              sx={{
-                mr: 2,
-                display: { xs: 'none', md: 'flex' },
-                fontWeight: 700,
-                color: 'primary.main',
-                textDecoration: 'none',
-              }}
-            >
-              BrainTime
-            </Typography>
+          <Toolbar disableGutters sx={{ height: 72, px: 2 }}>
+            {/* Logo and Brand */}
+            <Box sx={{ display: 'flex', alignItems: 'center', mr: 4 }}>
+              <SchoolIcon sx={{ fontSize: 32, mr: 1.5, color: 'primary.main' }} />
+              <Typography
+                variant="h5"
+                noWrap
+                component={Link}
+                to="/"
+                sx={{
+                  fontWeight: 700,
+                  color: 'primary.main',
+                  textDecoration: 'none',
+                  letterSpacing: '-0.02em'
+                }}
+              >
+                BrainTime
+              </Typography>
+            </Box>
 
-            <Box sx={{ flexGrow: 1 }} />
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              {/* Notifications */}
-              <Tooltip title="Notifications">
-                <IconButton 
-                  onClick={handleOpenNotifications}
-                  size="small"
-                  sx={{ 
-                    color: 'text.secondary',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: '8px',
-                    p: 1
+            {/* Desktop Navigation */}
+            <Box sx={{ 
+              display: { xs: 'none', md: 'flex' }, 
+              alignItems: 'center', 
+              gap: 1,
+              mr: 'auto'
+            }}>
+              {navigationItems.slice(0, 4).map((item) => (
+                <Button
+                  key={item.text}
+                  component={Link}
+                  to={item.path}
+                  startIcon={item.icon}
+                  sx={{
+                    color: location.pathname === item.path ? 'primary.main' : 'text.secondary',
+                    fontWeight: location.pathname === item.path ? 600 : 500,
+                    px: 2,
+                    py: 1,
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    backgroundColor: location.pathname === item.path ? 'primary.50' : 'transparent',
+                    '&:hover': {
+                      backgroundColor: location.pathname === item.path ? 'primary.100' : 'action.hover',
+                    }
                   }}
                 >
-                  <Badge badgeContent={3} color="error">
-                    <NotificationsIcon fontSize="small" />
-                  </Badge>
-                </IconButton>
-              </Tooltip>
-              
-              <Menu
-                sx={{ mt: '45px' }}
-                anchorEl={anchorElNotifications}
-                anchorOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                keepMounted
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                open={Boolean(anchorElNotifications)}
-                onClose={handleCloseNotifications}
-              >
-                <Paper sx={{ width: 320, maxHeight: 450, overflow: 'auto' }}>
-                  <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-                    <Typography variant="subtitle1" fontWeight="bold">
-                      Notifications
-                    </Typography>
-                  </Box>
-                  
-                  <List sx={{ py: 0 }}>
-                    <ListItem sx={{ py: 2, px: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-                      <Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                          <Typography variant="subtitle2" fontWeight="bold">
-                            New Exam Submission
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            2h ago
-                          </Typography>
-                        </Box>
-                        <Typography variant="body2">
-                          A student has submitted an exam for "Music Theory"
-                        </Typography>
-                      </Box>
-                    </ListItem>
-                    
-                    <ListItem sx={{ py: 2, px: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-                      <Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                          <Typography variant="subtitle2" fontWeight="bold">
-                            Group Enrollment
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            1d ago
-                          </Typography>
-                        </Box>
-                        <Typography variant="body2">
-                          A new student has enrolled in "Music 101"
-                        </Typography>
-                      </Box>
-                    </ListItem>
-                    
-                    <ListItem sx={{ py: 2, px: 2 }}>
-                      <Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                          <Typography variant="subtitle2" fontWeight="bold">
-                            System Update
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            3d ago
-                          </Typography>
-                        </Box>
-                        <Typography variant="body2">
-                          New features have been added to the platform
-                        </Typography>
-                      </Box>
-                    </ListItem>
-                  </List>
-                  
-                  <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
-                    <Button variant="text" size="small">
-                      View All Notifications
-                    </Button>
-                  </Box>
-                </Paper>
-              </Menu>
+                  {item.text}
+                  {item.text === 'Subscription' && user.role === 'creator' && !user.subscriptionPlan && (
+                    <Chip 
+                      label="Free" 
+                      size="small" 
+                      sx={{ 
+                        ml: 1,
+                        height: 18, 
+                        fontSize: '0.625rem',
+                        fontWeight: 500,
+                        bgcolor: 'primary.100',
+                        color: 'primary.700',
+                        border: 'none'
+                      }} 
+                    />
+                  )}
+                </Button>
+              ))}
+            </Box>
 
-              {/* User Menu */}
-              <Box 
-                onClick={handleOpenUserMenu}
+            {/* Mobile Navigation Menu */}
+            <Box sx={{ display: { xs: 'flex', md: 'none' }, mr: 'auto' }}>
+              <IconButton
+                onClick={handleOpenNavigation}
                 sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center',
-                  gap: 1.5,
-                  cursor: 'pointer',
-                  py: 1,
-                  px: 1.5,
-                  borderRadius: '8px',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  '&:hover': {
-                    bgcolor: 'action.hover'
-                  }
+                  color: 'text.secondary',
+                  borderRadius: 2,
+                  '&:hover': { bgcolor: 'action.hover' }
                 }}
               >
-                <Avatar 
-                  sx={{ 
-                    width: 32, 
-                    height: 32, 
-                    bgcolor: 'primary.main',
-                    fontSize: '0.875rem',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {getInitials(user.name || user.email || '')}
-                </Avatar>
-                <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-                  <Typography variant="body2" fontWeight="medium" lineHeight={1.2}>
-                    {user.name || user.email?.split('@')[0] || ''}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" lineHeight={1.2} sx={{ textTransform: 'capitalize' }}>
-                    {user.role}
-                  </Typography>
-                </Box>
-              </Box>
+                <MenuIcon />
+              </IconButton>
               
               <Menu
-                sx={{ mt: '45px' }}
-                id="menu-appbar"
-                anchorEl={anchorElUser}
-                anchorOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                keepMounted
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                open={Boolean(anchorElUser)}
-                onClose={handleCloseUserMenu}
+                anchorEl={anchorElNavigation}
+                open={Boolean(anchorElNavigation)}
+                onClose={handleCloseNavigation}
                 PaperProps={{
                   sx: { 
-                    width: 220,
-                    padding: 1,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+                    width: 280,
+                    mt: 1,
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                    border: '1px solid',
+                    borderColor: 'divider'
                   }
                 }}
               >
-                <Box sx={{ px: 2, py: 1 }}>
-                  <Typography variant="subtitle2" fontWeight="bold">
-                    {user.email}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {user.role === 'creator' && 'Free Plan'}
-                  </Typography>
-                </Box>
-                
-                <Divider sx={{ my: 1 }} />
-                
-                <MenuItem onClick={handleProfile} sx={{ borderRadius: 1 }}>
+                {navigationItems.map((item) => (
+                  <MenuItem 
+                    key={item.text}
+                    component={Link}
+                    to={item.path}
+                    onClick={handleCloseNavigation}
+                    selected={location.pathname === item.path}
+                    sx={{ 
+                      mx: 1,
+                      borderRadius: 2,
+                      '&.Mui-selected': {
+                        backgroundColor: 'primary.50',
+                        color: 'primary.main',
+                      }
+                    }}
+                  >
+                    <ListItemIcon sx={{ color: 'inherit' }}>
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText primary={item.text} />
+                    {item.text === 'Subscription' && user.role === 'creator' && !user.subscriptionPlan && (
+                      <Chip 
+                        label="Free" 
+                        size="small" 
+                        sx={{ 
+                          height: 18, 
+                          fontSize: '0.625rem',
+                          fontWeight: 500,
+                          bgcolor: 'primary.100',
+                          color: 'primary.700',
+                          border: 'none'
+                        }} 
+                      />
+                    )}
+                  </MenuItem>
+                ))}
+              </Menu>
+            </Box>
+
+            {/* Action Buttons */}
+            <Stack direction="row" spacing={1} alignItems="center">
+              {/* Create New Exam Button - Only for creators */}
+              {user.role === 'creator' && (
+                <Button
+                  variant="contained"
+                  size="medium"
+                  startIcon={<AddIcon />}
+                  onClick={() => navigate('/creator/exams/create')}
+                  sx={{ 
+                    borderRadius: 2,
+                    px: 2,
+                    py: 1,
+                    fontWeight: 600,
+                    boxShadow: 1,
+                    mr: 1,
+                    display: { xs: 'none', sm: 'flex' },
+                    '&:hover': { boxShadow: 2 }
+                  }}
+                >
+                  Create Exam
+                </Button>
+              )}
+
+              {/* Mobile Create Button */}
+              {user.role === 'creator' && (
+                <IconButton
+                  onClick={() => navigate('/creator/exams/create')}
+                  sx={{ 
+                    display: { xs: 'flex', sm: 'none' },
+                    color: 'primary.main',
+                    bgcolor: 'primary.50',
+                    '&:hover': { bgcolor: 'primary.100' }
+                  }}
+                >
+                  <AddIcon />
+                </IconButton>
+              )}
+
+              {/* Search Button */}
+              <IconButton
+                sx={{ 
+                  color: 'text.secondary',
+                  borderRadius: 2,
+                  '&:hover': { bgcolor: 'action.hover' }
+                }}
+              >
+                <SearchIcon />
+              </IconButton>
+
+              {/* Notifications */}
+              <IconButton
+                onClick={handleOpenNotifications}
+                sx={{ 
+                  color: 'text.secondary',
+                  borderRadius: 2,
+                  '&:hover': { bgcolor: 'action.hover' }
+                }}
+              >
+                <Badge badgeContent={3} color="error">
+                  <NotificationsIcon />
+                </Badge>
+              </IconButton>
+
+              {/* User Menu */}
+              <Tooltip title="Account settings">
+                <IconButton onClick={handleOpenUserMenu} sx={{ p: 0, ml: 1 }}>
+                  <Avatar 
+                    sx={{ 
+                      width: 40, 
+                      height: 40, 
+                      bgcolor: 'primary.main',
+                      fontSize: '0.875rem',
+                      fontWeight: 600
+                    }}
+                  >
+                    {getInitials(user?.name || user?.email || '')}
+                  </Avatar>
+                </IconButton>
+              </Tooltip>
+            </Stack>
+
+            {/* User Menu */}
+            <Menu
+              sx={{ mt: '45px' }}
+              id="menu-appbar"
+              anchorEl={anchorElUser}
+              anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              keepMounted
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              open={Boolean(anchorElUser)}
+              onClose={handleCloseUserMenu}
+              PaperProps={{
+                sx: { 
+                  width: 240,
+                  mt: 1,
+                  borderRadius: 3,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                  border: '1px solid',
+                  borderColor: 'divider'
+                }
+              }}
+            >
+              <Box sx={{ px: 3, py: 2 }}>
+                <Typography variant="subtitle1" fontWeight="bold">
+                  {user.name || user.email?.split('@')[0]}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {user.email}
+                </Typography>
+                {user.role === 'creator' && (
+                  <Chip 
+                    label="Free Plan" 
+                    size="small" 
+                    color="primary" 
+                    variant="outlined"
+                    sx={{ mt: 1, fontSize: '0.75rem' }}
+                  />
+                )}
+              </Box>
+              
+              <Divider />
+              
+              <Box sx={{ py: 1 }}>
+                <MenuItem 
+                  onClick={handleProfile} 
+                  sx={{ 
+                    mx: 1, 
+                    borderRadius: 2,
+                    '&:hover': { bgcolor: 'action.hover' }
+                  }}
+                >
                   <ListItemIcon>
                     <PersonIcon fontSize="small" />
                   </ListItemIcon>
@@ -395,7 +426,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </MenuItem>
                 
                 {user.role === 'creator' && (
-                  <MenuItem onClick={handleSubscription} sx={{ borderRadius: 1 }}>
+                  <MenuItem 
+                    onClick={handleSubscription} 
+                    sx={{ 
+                      mx: 1, 
+                      borderRadius: 2,
+                      '&:hover': { bgcolor: 'action.hover' }
+                    }}
+                  >
                     <ListItemIcon>
                       <PaymentIcon fontSize="small" />
                     </ListItemIcon>
@@ -403,151 +441,83 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </MenuItem>
                 )}
                 
-                <MenuItem onClick={handleLogout} sx={{ borderRadius: 1 }}>
+                <Divider sx={{ my: 1 }} />
+                
+                <MenuItem 
+                  onClick={handleLogout} 
+                  sx={{ 
+                    mx: 1, 
+                    borderRadius: 2,
+                    color: 'error.main',
+                    '&:hover': { 
+                      bgcolor: 'error.50',
+                      color: 'error.main'
+                    }
+                  }}
+                >
                   <ListItemIcon>
-                    <LogoutIcon fontSize="small" />
+                    <LogoutIcon fontSize="small" color="error" />
                   </ListItemIcon>
                   <ListItemText primary="Logout" />
                 </MenuItem>
-              </Menu>
-            </Box>
+              </Box>
+            </Menu>
+
+            {/* Notifications Menu */}
+            <Menu
+              sx={{ mt: '45px' }}
+              id="menu-notifications"
+              anchorEl={anchorElNotifications}
+              anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              keepMounted
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              open={Boolean(anchorElNotifications)}
+              onClose={handleCloseNotifications}
+              PaperProps={{
+                sx: { 
+                  width: 320,
+                  mt: 1,
+                  borderRadius: 3,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                  border: '1px solid',
+                  borderColor: 'divider'
+                }
+              }}
+            >
+              <Box sx={{ p: 2 }}>
+                <Typography variant="h6" fontWeight="bold">
+                  Notifications
+                </Typography>
+              </Box>
+              <Divider />
+              <Box sx={{ p: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  No new notifications
+                </Typography>
+              </Box>
+            </Menu>
           </Toolbar>
         </Container>
       </AppBar>
       
-      <Drawer
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: drawerWidth,
-            boxSizing: 'border-box',
-            backgroundColor: 'white',
-            borderRight: '1px solid',
-            borderColor: 'divider',
-            boxShadow: 'none',
-          },
+      {/* Main Content */}
+      <Box 
+        component="main" 
+        sx={{ 
+          flexGrow: 1,
+          pt: '72px', // Account for fixed navbar height
+          backgroundColor: '#fafafa',
+          minHeight: '100vh'
         }}
-        variant="persistent"
-        anchor="left"
-        open={drawerOpen}
       >
-        <DrawerHeader sx={{ display: 'flex', justifyContent: 'space-between', px: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <SchoolIcon sx={{ color: 'primary.main', mr: 1 }} />
-            <Typography variant="h6" fontWeight="bold" color="primary.main">
-              BrainTime
-            </Typography>
-          </Box>
-          <IconButton onClick={handleDrawerClose}>
-            <ChevronLeftIcon />
-          </IconButton>
-        </DrawerHeader>
-        
-        <Divider />
-        
-        {user.role === 'creator' && (
-          <Box sx={{ p: 2 }}>
-            <Button
-              variant="contained"
-              fullWidth
-              startIcon={<AddIcon />}
-              onClick={() => navigate('/creator/exams/create')}
-              sx={{ borderRadius: '8px', textTransform: 'none' }}
-            >
-              Create New Exam
-            </Button>
-          </Box>
-        )}
-        
-        <Box sx={{ p: 2, pb: 0 }}>
-          <Typography variant="body2" color="text.secondary" fontWeight="medium" sx={{ mb: 1, ml: 2 }}>
-            MAIN MENU
-          </Typography>
-        </Box>
-        
-        <List sx={{ px: 2 }}>
-          {getNavigationItems().map((item) => (
-            <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
-              <ListItemButton 
-                component={Link} 
-                to={item.path}
-                selected={location.pathname === item.path}
-                sx={{
-                  borderRadius: '8px',
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'white',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                    '& .MuiListItemIcon-root': {
-                      color: 'white',
-                    },
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 40, color: location.pathname === item.path ? 'white' : 'text.secondary' }}>
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText 
-                  primary={item.text} 
-                  primaryTypographyProps={{ 
-                    fontSize: 14,
-                    fontWeight: location.pathname === item.path ? 'bold' : 'medium'
-                  }}
-                />
-                {item.text === 'Subscription' && user.role === 'creator' && !user.subscriptionPlan && (
-                  <Chip 
-                    label="Free" 
-                    size="small" 
-                    color="primary" 
-                    sx={{ 
-                      height: 20, 
-                      '& .MuiChip-label': { px: 1, fontSize: '0.625rem' },
-                      bgcolor: location.pathname === item.path ? 'white' : undefined,
-                      color: location.pathname === item.path ? 'primary.main' : undefined
-                    }} 
-                  />
-                )}
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-        
-        <Box sx={{ mt: 'auto', p: 2 }}>
-          <Divider sx={{ mb: 2 }} />
-          <ListItemButton 
-            onClick={handleLogout}
-            sx={{
-              borderRadius: '8px',
-              '&:hover': {
-                backgroundColor: 'error.main',
-                color: 'white',
-                '& .MuiListItemIcon-root': {
-                  color: 'white',
-                },
-              },
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 40, color: 'text.secondary' }}>
-              <LogoutIcon />
-            </ListItemIcon>
-            <ListItemText 
-              primary="Logout" 
-              primaryTypographyProps={{ 
-                fontSize: 14,
-                fontWeight: 'medium'
-              }}
-            />
-          </ListItemButton>
-        </Box>
-      </Drawer>
-      
-      <Main open={drawerOpen}>
-        <DrawerHeader />
         {children}
-      </Main>
+      </Box>
     </Box>
   );
 };

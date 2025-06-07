@@ -34,14 +34,14 @@ const AssessmentPreview: React.FC<AssessmentPreviewProps> = ({
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1">
             <h3 className="text-lg font-semibold text-white mb-2">
-              Question {index + 1} of {examData.questions.length}
+              Question {index + 1} of {examData?.questions?.length || 0}
             </h3>
             <div className="text-sm text-gray-400 mb-4">
               Points: {question.points}
             </div>
           </div>
           <div className="text-sm text-gray-400">
-            {index + 1} / {examData.questions.length}
+            {index + 1} / {examData?.questions?.length || 0}
           </div>
         </div>
 
@@ -158,10 +158,10 @@ const AssessmentPreview: React.FC<AssessmentPreviewProps> = ({
           </button>
           
           <div className="text-sm text-gray-400">
-            Question {currentQuestionIndex + 1} of {examData.questions.length}
+            Question {currentQuestionIndex + 1} of {examData?.questions?.length || 0}
           </div>
           
-          {currentQuestionIndex < examData.questions.length - 1 ? (
+          {currentQuestionIndex < (examData?.questions?.length || 0) - 1 ? (
             <button
               onClick={() => setCurrentQuestionIndex(currentQuestionIndex + 1)}
               className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
@@ -181,7 +181,7 @@ const AssessmentPreview: React.FC<AssessmentPreviewProps> = ({
     );
   };
 
-  const totalPoints = examData.questions.reduce((sum, q) => sum + q.points, 0);
+  const totalPoints = examData?.questions?.reduce((sum, q) => sum + (q.points || 0), 0) || 0;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
@@ -194,7 +194,7 @@ const AssessmentPreview: React.FC<AssessmentPreviewProps> = ({
               <p className="text-gray-300 text-sm mb-2">{examData.description}</p>
               <div className="flex flex-wrap gap-4 text-sm text-gray-400">
                 <span>Duration: {examData.duration} minutes</span>
-                <span>Questions: {examData.questions.length}</span>
+                <span>Questions: {examData?.questions?.length || 0}</span>
                 <span>Total Points: {totalPoints}</span>
                 <span>Starts: {formatDistanceToNow(examData.startTime, { addSuffix: true })}</span>
               </div>
@@ -236,7 +236,7 @@ const AssessmentPreview: React.FC<AssessmentPreviewProps> = ({
           <div className="mb-6">
             {/* Question Navigation */}
             <div className="flex flex-wrap gap-2 mb-6">
-              {examData.questions.map((_, index) => (
+              {(examData?.questions || []).map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentQuestionIndex(index)}
@@ -254,7 +254,7 @@ const AssessmentPreview: React.FC<AssessmentPreviewProps> = ({
             </div>
 
             {/* Current Question */}
-            {renderQuestion(examData.questions[currentQuestionIndex], currentQuestionIndex)}
+            {examData?.questions?.[currentQuestionIndex] && renderQuestion(examData.questions[currentQuestionIndex], currentQuestionIndex)}
           </div>
         </div>
 
@@ -262,7 +262,7 @@ const AssessmentPreview: React.FC<AssessmentPreviewProps> = ({
         <div className="bg-gray-700 px-6 py-4 border-t border-gray-600">
           <div className="flex justify-between items-center text-sm text-gray-400">
             <div>
-              Questions Answered: {Object.keys(studentAnswers).length} of {examData.questions.length}
+              Questions Answered: {Object.keys(studentAnswers).length} of {examData?.questions?.length || 0}
             </div>
             <div className="flex space-x-4">
               <span>Shuffle: {examData.shuffleQuestions ? 'Yes' : 'No'}</span>

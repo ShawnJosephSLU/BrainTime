@@ -11,6 +11,8 @@ import {
   getStudentGroups,
   assignExamToGroup,
   removeExamFromGroup,
+  getPublicGroups,
+  joinPublicGroup,
   testAuth,
 } from '../controllers/groupController';
 
@@ -35,6 +37,8 @@ router.get('/creator', authenticateToken, roleMiddleware(['creator', 'admin']), 
 // Student routes - put these BEFORE the :groupId route to avoid path collision
 router.post('/enroll', authenticateToken, wrapAuthHandler(enrollInGroup));
 router.get('/student', authenticateToken, wrapAuthHandler(getStudentGroups));
+router.get('/public', authenticateToken, wrapAuthHandler(getPublicGroups));
+router.post('/:groupId/join', authenticateToken, wrapAuthHandler(joinPublicGroup));
 
 // Single group routes - these must come AFTER specific paths to avoid conflicts
 router.get('/:groupId', authenticateToken, wrapAuthHandler(getGroupById));

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { API_URL } from '../../config/api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { formatISO } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -15,8 +15,7 @@ import {
   Alert,
   CircularProgress,
   Chip,
-  Divider,
-  Container
+  Divider
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import PreviewIcon from '@mui/icons-material/Preview';
@@ -80,9 +79,12 @@ const AutosaveIndicator: React.FC<AutosaveIndicatorProps> = ({ isAutosaving, las
 
 const ExamCreator: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, setAuthHeaders, refreshAuth } = useAuth();
+  const { examId } = useParams<{ examId: string }>();
+  const isEditMode = Boolean(examId);
   const [activeStep, setActiveStep] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoadingExam, setIsLoadingExam] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState<boolean>(false);
@@ -103,6 +105,7 @@ const ExamCreator: React.FC = () => {
     shuffleQuestions: false,
     showResults: false,
     isPublic: false, // Default to private for security
+    selectedGroups: [],
   });
 
   const handleExamDataChange = (updatedData: Partial<IExamData>) => {
@@ -110,9 +113,75 @@ const ExamCreator: React.FC = () => {
     setIsDirty(true);
   };
 
-  // Autosave functionality
+  // Load existing exam data for editing
+  const loadExamData = useCallback(async () => {
+    if (!examId) return;
+
+    try {
+      setIsLoadingExam(true);
+      setError(null);
+      
+      // Ensure auth headers are set
+      if (!setAuthHeaders()) {
+        if (!refreshAuth()) {
+          setError('Authentication failed. Please log in again.');
+          setIsLoadingExam(false);
+          return;
+        }
+      }
+      
+      const response = await axios.get(`${API_URL}/api/quizzes/${examId}`);
+      
+      const exam = response.data;
+      
+      // Transform the exam data to match IExamData interface
+      const transformedExamData: IExamData = {
+        title: exam.title || '',
+        description: exam.description || '',
+        questions: exam.questions && exam.questions.length > 0 ? exam.questions : [{ ...emptyQuestion }],
+        startTime: exam.startTime ? new Date(exam.startTime) : new Date(Date.now() + 24 * 60 * 60 * 1000),
+        endTime: exam.endTime ? new Date(exam.endTime) : new Date(Date.now() + 25 * 60 * 60 * 1000),
+        duration: exam.duration || 60,
+        allowInternet: exam.allowInternet || false,
+        password: exam.password || '',
+        autoSubmit: exam.autoSubmit !== undefined ? exam.autoSubmit : true,
+        shuffleQuestions: exam.shuffleQuestions || false,
+        showResults: exam.showResults || false,
+        isPublic: exam.isPublic || false,
+        selectedGroups: exam.selectedGroups || [],
+      };
+      
+      setExamData(transformedExamData);
+      setIsDirty(false); // Reset dirty state since we're loading existing data
+      
+    } catch (error: any) {
+      console.error('Error loading exam:', error);
+      setError(error.response?.data?.message || 'Failed to load exam data');
+    } finally {
+      setIsLoadingExam(false);
+    }
+  }, [examId, setAuthHeaders, refreshAuth]);
+
+  // Load exam data when in edit mode and check auth
+  useEffect(() => {
+    // Always refresh auth and set headers on component mount
+    console.log('ExamCreator: Checking authentication...');
+    const authRefreshed = refreshAuth();
+    const headersSet = setAuthHeaders();
+    
+    console.log('ExamCreator: Auth refreshed:', authRefreshed);
+    console.log('ExamCreator: Headers set:', headersSet);
+    console.log('ExamCreator: User:', user);
+    console.log('ExamCreator: Is edit mode:', isEditMode);
+    
+    if (isEditMode) {
+      loadExamData();
+    }
+  }, [isEditMode, loadExamData, refreshAuth, setAuthHeaders, user]);
+
+  // Autosave functionality (only for create mode)
   const autosave = useCallback(async () => {
-    if (!isDirty || !examData.title) return;
+    if (!isDirty || !examData.title || isEditMode) return;
 
     try {
       setIsAutosaving(true);
@@ -121,6 +190,7 @@ const ExamCreator: React.FC = () => {
         ...examData,
         startTime: examData.startTime.toISOString(),
         endTime: examData.endTime.toISOString(),
+        selectedGroups: examData.selectedGroups,
         lastSaved: new Date().toISOString()
       };
       
@@ -132,10 +202,12 @@ const ExamCreator: React.FC = () => {
     } finally {
       setIsAutosaving(false);
     }
-  }, [examData, isDirty, user?.id]);
+  }, [examData, isDirty, user?.id, isEditMode]);
 
-  // Load from autosave on component mount
+  // Load from autosave on component mount (only for create mode)
   useEffect(() => {
+    if (isEditMode) return; // Skip autosave loading in edit mode
+
     const autosaveKey = `braintime_exam_autosave_${user?.id || 'anonymous'}`;
     const saved = localStorage.getItem(autosaveKey);
     
@@ -151,7 +223,8 @@ const ExamCreator: React.FC = () => {
             setExamData({
               ...parsedData,
               startTime: new Date(parsedData.startTime),
-              endTime: new Date(parsedData.endTime)
+              endTime: new Date(parsedData.endTime),
+              selectedGroups: parsedData.selectedGroups || []
             });
             setLastSaved(new Date(parsedData.lastSaved));
           }
@@ -160,7 +233,7 @@ const ExamCreator: React.FC = () => {
         console.error('Failed to load autosave:', error);
       }
     }
-  }, [user?.id]);
+  }, [user?.id, isEditMode]);
 
   // Autosave every 30 seconds
   useEffect(() => {
@@ -320,22 +393,67 @@ const ExamCreator: React.FC = () => {
         return;
       }
 
-      await axios.post(`${API_URL}/api/quizzes/create`, {
+      const examPayload = {
         ...examData,
         startTime: formatISO(examData.startTime),
         endTime: formatISO(examData.endTime),
-      });
+        // Don't send selectedGroups to the quiz creation/update endpoint
+        selectedGroups: undefined,
+      };
 
-      setSuccess('Exam created successfully!');
+      // Ensure auth headers are set
+      if (!setAuthHeaders()) {
+        if (!refreshAuth()) {
+          setError('Authentication failed. Please log in again.');
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      let quizId: string;
+
+      if (isEditMode && examId) {
+        // Update existing exam
+        await axios.put(`${API_URL}/api/quizzes/${examId}`, examPayload);
+        quizId = examId;
+        setSuccess('Exam updated successfully!');
+      } else {
+        // Create new exam
+        const createResponse = await axios.post(`${API_URL}/api/quizzes/create`, examPayload);
+        quizId = createResponse.data.quizId;
+        setSuccess('Exam created successfully!');
+      }
+
+      // Step 2: Handle group assignments (both create and update modes)
+      if (examData.selectedGroups.length > 0) {
+        const assignmentPromises = examData.selectedGroups.map(groupId =>
+          axios.post(`${API_URL}/api/groups/${groupId}/assign-exam/${quizId}`, {})
+        );
+
+        try {
+          await Promise.all(assignmentPromises);
+          const action = isEditMode ? 'updated' : 'created';
+          setSuccess(`Exam ${action} and assigned to ${examData.selectedGroups.length} group(s) successfully!`);
+        } catch (assignError: any) {
+          console.error('Error assigning to groups:', assignError);
+          const action = isEditMode ? 'updated' : 'created';
+          setSuccess(`Exam ${action} successfully, but some group assignments failed. You can assign groups later.`);
+        }
+      }
+
       clearAutosave(); // Clear autosave on successful submission
       
-      // Navigate to quiz list
+      // Navigate to exam detail page or exam list
       setTimeout(() => {
-        navigate('/creator/exams');
+        if (isEditMode) {
+          navigate(`/creator/exams/${quizId}`);
+        } else {
+          navigate('/creator/exams');
+        }
       }, 2000);
     } catch (err: any) {
-      console.error('Error creating quiz:', err);
-      setError(err.response?.data?.message || 'Failed to create exam');
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} exam:`, err);
+      setError(err.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} exam`);
     } finally {
       setIsLoading(false);
     }
@@ -432,6 +550,26 @@ const ExamCreator: React.FC = () => {
                   <Typography variant="body2" color="text.secondary">End Time</Typography>
                   <Typography variant="body1">{examData.endTime.toLocaleString()}</Typography>
                 </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Assigned Groups</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                    {examData.selectedGroups.length === 0 ? (
+                      <Typography variant="body2" color="text.secondary">
+                        No groups selected
+                      </Typography>
+                    ) : (
+                      examData.selectedGroups.map((groupId, index) => (
+                        <Chip
+                          key={groupId}
+                          label={`Group ${index + 1}`}
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                        />
+                      ))
+                    )}
+                  </Box>
+                </Box>
               </Box>
             </Paper>
 
@@ -451,34 +589,54 @@ const ExamCreator: React.FC = () => {
     }
   };
 
-  return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Button
-              startIcon={<ArrowBackIcon />}
-              onClick={() => navigate('/creator/exams')}
-              sx={{ minWidth: 'auto' }}
-            >
-              Back
-            </Button>
-            <Typography variant="h4" component="h1" fontWeight="bold">
-              Create New Assessment
+  // Show loading spinner while loading exam data in edit mode
+  if (isEditMode && isLoadingExam) {
+    return (
+      <Box sx={{ height: '100%', overflow: 'auto', px: 3, py: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <Box sx={{ textAlign: 'center' }}>
+            <CircularProgress size={40} sx={{ mb: 2 }} />
+            <Typography variant="h6" color="text.secondary">
+              Loading exam data...
             </Typography>
           </Box>
-          
-          <AutosaveIndicator
-            isAutosaving={isAutosaving}
-            lastSaved={lastSaved}
-            isDirty={isDirty}
-          />
         </Box>
-        
-        <Typography variant="body2" color="text.secondary">
-          Create comprehensive assessments with timed options, multiple question types, and advanced settings.
-        </Typography>
       </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ height: '100%', overflow: 'auto', px: 3, py: 3 }}>
+      <Box sx={{ maxWidth: '1200px', mx: 'auto' }}>
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Button
+                startIcon={<ArrowBackIcon />}
+                onClick={() => navigate('/creator/exams')}
+                sx={{ minWidth: 'auto' }}
+              >
+                Back
+              </Button>
+              <Typography variant="h4" component="h1" fontWeight="bold">
+                {isEditMode ? 'Edit Assessment' : 'Create New Assessment'}
+              </Typography>
+            </Box>
+            
+            <AutosaveIndicator
+              isAutosaving={isAutosaving}
+              lastSaved={lastSaved}
+              isDirty={isDirty}
+            />
+          </Box>
+          
+          <Typography variant="body2" color="text.secondary">
+            {isEditMode 
+              ? 'Edit your assessment with timed options, multiple question types, and advanced settings.'
+              : 'Create comprehensive assessments with timed options, multiple question types, and advanced settings.'
+            }
+          </Typography>
+        </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 3, borderRadius: '8px' }}>
@@ -493,7 +651,7 @@ const ExamCreator: React.FC = () => {
       )}
 
       <Paper sx={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
-        <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ p: { xs: 2, sm: 3 }, borderBottom: '1px solid', borderColor: 'divider' }}>
           <Stepper activeStep={activeStep} alternativeLabel>
             {steps.map((label) => (
               <Step key={label}>
@@ -503,7 +661,7 @@ const ExamCreator: React.FC = () => {
           </Stepper>
         </Box>
 
-        <Box sx={{ p: 4 }}>
+        <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
           {renderStepContent()}
         </Box>
 
@@ -523,11 +681,14 @@ const ExamCreator: React.FC = () => {
               <Button
                 variant="contained"
                 onClick={handleSubmit}
-                disabled={isLoading}
+                disabled={isLoading || isLoadingExam}
                 startIcon={isLoading ? <CircularProgress size={16} /> : <SaveIcon />}
                 sx={{ borderRadius: '8px', minWidth: '140px' }}
               >
-                {isLoading ? 'Creating...' : 'Publish Assessment'}
+                {isLoading 
+                  ? (isEditMode ? 'Updating...' : 'Creating...') 
+                  : (isEditMode ? 'Update Assessment' : 'Publish Assessment')
+                }
               </Button>
             ) : (
               <Button
@@ -542,15 +703,16 @@ const ExamCreator: React.FC = () => {
         </Box>
       </Paper>
 
-      {/* Assessment Preview Modal */}
-      {showPreview && (
-        <AssessmentPreview
-          examData={examData}
-          onClose={() => setShowPreview(false)}
-          onEdit={() => setShowPreview(false)}
-        />
-      )}
-    </Container>
+        {/* Assessment Preview Modal */}
+        {showPreview && (
+          <AssessmentPreview
+            examData={examData}
+            onClose={() => setShowPreview(false)}
+            onEdit={() => setShowPreview(false)}
+          />
+        )}
+      </Box>
+    </Box>
   );
 };
 
