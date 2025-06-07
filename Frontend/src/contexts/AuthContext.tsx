@@ -136,30 +136,63 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     checkAuth();
   }, []);
   
-  // Set up a timer to check token expiration periodically
+  // Auto refresh token when it's about to expire
   useEffect(() => {
     if (!isAuthenticated) return;
     
-    // Check every 5 minutes
-    const checkInterval = 5 * 60 * 1000; 
-    
-    const intervalId = setInterval(() => {
-      console.log('Checking token expiration...');
-      if (isTokenExpired()) {
-        console.log('Token expired during session, logging out');
+    const checkAndRefreshToken = async () => {
+      const remainingTime = getRemainingTokenTime();
+      
+      // Refresh when less than 5 minutes remaining
+      if (remainingTime && remainingTime < 5 * 60 * 1000) {
+        console.log('Token expiring soon, attempting refresh...');
+        try {
+          const response = await axios.post('/api/auth/refresh-token', {}, {
+            withCredentials: true
+          });
+          
+          if (response.data.accessToken) {
+            const token = response.data.accessToken;
+            const decoded = jwtDecode<DecodedToken>(token);
+            const userData: User = {
+              id: decoded.userId,
+              email: decoded.email,
+              role: decoded.role,
+              ...user
+            };
+            
+            // Update token and user data
+            localStorage.setItem('authToken', token);
+            localStorage.setItem('user', JSON.stringify(userData));
+            setUser(userData);
+            setAuthHeaders();
+            
+            console.log('Token refreshed successfully');
+          }
+        } catch (error) {
+          console.error('Token refresh failed:', error);
+          // Only logout if refresh fails due to invalid refresh token
+          if (axios.isAxiosError(error) && error.response?.status === 403) {
+            logout();
+            navigate('/signin');
+          }
+        }
+      } else if (isTokenExpired()) {
+        console.log('Token expired, logging out');
         logout();
         navigate('/signin');
-      } else {
-        const remainingTime = getRemainingTokenTime();
-        if (remainingTime) {
-          const minutesRemaining = Math.floor(remainingTime / 60000);
-          console.log(`Token still valid. ${minutesRemaining} minutes remaining.`);
-        }
       }
-    }, checkInterval);
+    };
+    
+    // Check immediately
+    checkAndRefreshToken();
+    
+    // Check every minute for more responsive refresh
+    const checkInterval = 60 * 1000; // 1 minute
+    const intervalId = setInterval(checkAndRefreshToken, checkInterval);
     
     return () => clearInterval(intervalId);
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, user]);
   
   // Refresh auth headers on route change
   useEffect(() => {

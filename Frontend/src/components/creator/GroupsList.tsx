@@ -34,6 +34,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import PublicIcon from '@mui/icons-material/Public';
 import LockIcon from '@mui/icons-material/Lock';
+import GroupIcon from '@mui/icons-material/Group';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 interface IGroup {
   _id: string;
@@ -500,41 +502,220 @@ const GroupsList: React.FC = () => {
       </Dialog>
       
       {/* Assign Exam Dialog */}
-      <Dialog open={assignDialogOpen} onClose={closeAssignDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>Assign Exam to Group</DialogTitle>
-        <DialogContent>
-          <Typography variant="subtitle1" gutterBottom>
-            Group: {selectedGroup?.name}
-          </Typography>
-          
-          <TextField
-            select
-            label="Select Exam"
-            fullWidth
-            variant="outlined"
-            value={selectedExam}
-            onChange={(e) => setSelectedExam(e.target.value)}
-            margin="normal"
-            SelectProps={{
-              native: true,
+      <Dialog 
+        open={assignDialogOpen} 
+        onClose={closeAssignDialog} 
+        maxWidth="md" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            maxHeight: '80vh'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          pb: 1, 
+          background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+          color: 'white',
+          borderRadius: '16px 16px 0 0'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <BookIcon />
+            <Typography variant="h6" component="div">
+              Assign Exam to Group
+            </Typography>
+          </Box>
+        </DialogTitle>
+        
+        <DialogContent sx={{ p: 3 }}>
+          {/* Selected Group Info */}
+          <Paper 
+            elevation={0} 
+            sx={{ 
+              p: 3, 
+              mb: 3, 
+              border: '2px solid #e3f2fd',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)'
             }}
           >
-            <option value="">-- Select an Exam --</option>
-            {availableExams.map((exam) => (
-              <option key={exam._id} value={exam._id}>
-                {exam.title}
-              </option>
-            ))}
-          </TextField>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Box sx={{ 
+                p: 1, 
+                borderRadius: '8px', 
+                background: '#1976d2',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <GroupIcon fontSize="small" />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                  {selectedGroup?.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {selectedGroup?.description || 'No description provided'}
+                </Typography>
+              </Box>
+            </Box>
+            
+            <Box sx={{ display: 'flex', gap: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <PersonIcon fontSize="small" color="action" />
+                <Typography variant="body2" color="text.secondary">
+                  {selectedGroup?.students?.length || 0} students
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <BookIcon fontSize="small" color="action" />
+                <Typography variant="body2" color="text.secondary">
+                  {selectedGroup?.exams?.length || 0} exams assigned
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
+
+          {/* Exam Selection */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+              Select an Exam to Assign
+            </Typography>
+            
+            {availableExams.length === 0 ? (
+              <Paper 
+                elevation={0}
+                sx={{ 
+                  p: 4, 
+                  textAlign: 'center',
+                  border: '1px dashed #ccc',
+                  borderRadius: '12px'
+                }}
+              >
+                <BookIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No Exams Available
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Create an exam first before assigning it to groups.
+                </Typography>
+              </Paper>
+            ) : (
+              <Box sx={{ maxHeight: '300px', overflowY: 'auto' }}>
+                {availableExams.map((exam) => (
+                  <Paper
+                    key={exam._id}
+                    elevation={selectedExam === exam._id ? 3 : 0}
+                    sx={{
+                      p: 2,
+                      mb: 2,
+                      cursor: 'pointer',
+                      border: selectedExam === exam._id 
+                        ? '2px solid #1976d2' 
+                        : '1px solid #e0e0e0',
+                      borderRadius: '12px',
+                      transition: 'all 0.2s ease',
+                      background: selectedExam === exam._id 
+                        ? 'linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%)'
+                        : 'white',
+                      '&:hover': {
+                        borderColor: '#1976d2',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      }
+                    }}
+                    onClick={() => setSelectedExam(exam._id)}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                      <Box sx={{ 
+                        p: 1, 
+                        borderRadius: '8px', 
+                        background: selectedExam === exam._id ? '#1976d2' : '#f5f5f5',
+                        color: selectedExam === exam._id ? 'white' : 'text.secondary',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minWidth: '40px',
+                        height: '40px'
+                      }}>
+                        {selectedExam === exam._id ? (
+                          <CheckCircleIcon fontSize="small" />
+                        ) : (
+                          <BookIcon fontSize="small" />
+                        )}
+                      </Box>
+                      
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography 
+                          variant="subtitle1" 
+                          sx={{ 
+                            fontWeight: 600,
+                            mb: 0.5,
+                            color: selectedExam === exam._id ? '#1976d2' : 'text.primary'
+                          }}
+                        >
+                          {exam.title}
+                        </Typography>
+                        
+                        {exam.description && (
+                          <Typography 
+                            variant="body2" 
+                            color="text.secondary"
+                            sx={{ 
+                              mb: 1,
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden'
+                            }}
+                          >
+                            {exam.description}
+                          </Typography>
+                        )}
+                        
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Chip
+                            label={exam.isLive ? 'Live' : 'Draft'}
+                            size="small"
+                            color={exam.isLive ? 'success' : 'default'}
+                            variant="outlined"
+                          />
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Paper>
+                ))}
+              </Box>
+            )}
+          </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={closeAssignDialog} disabled={isAssigning}>
+        
+        <DialogActions 
+          sx={{ 
+            p: 3, 
+            borderTop: '1px solid #e0e0e0',
+            background: '#fafafa'
+          }}
+        >
+          <Button 
+            onClick={closeAssignDialog} 
+            disabled={isAssigning}
+            variant="outlined"
+            sx={{ mr: 2 }}
+          >
             Cancel
           </Button>
           <Button 
             onClick={confirmAssignExam} 
-            color="primary"
-            disabled={!selectedExam || isAssigning}
+            variant="contained"
+            disabled={!selectedExam || isAssigning || availableExams.length === 0}
+            startIcon={isAssigning ? <CircularProgress size={16} /> : <BookIcon />}
+            sx={{ 
+              minWidth: '140px',
+              borderRadius: '8px'
+            }}
           >
             {isAssigning ? 'Assigning...' : 'Assign Exam'}
           </Button>

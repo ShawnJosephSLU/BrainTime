@@ -17,6 +17,7 @@ import ExamCreator from './components/creator/ExamCreator';
 import ExamsList from './components/creator/ExamsList';
 import ExamSession from './components/student/ExamSession';
 import AvailableExams from './components/student/AvailableExams';
+import ExamResults from './components/student/ExamResults';
 import ExamDetail from './components/creator/ExamDetail';
 import GroupsList from './components/creator/GroupsList';
 import SubmissionsList from './components/creator/SubmissionsList';
@@ -53,6 +54,7 @@ function App() {
               <Route path="/student/dashboard" element={<StudentDashboard />} />
               <Route path="/student/exams" element={<AvailableExams />} />
               <Route path="/student/exams/:quizId" element={<ExamSession />} />
+              <Route path="/student/results/:resultId" element={<ExamResults />} />
               {/* Add more student routes as needed */}
             </Route>
           </Route>
